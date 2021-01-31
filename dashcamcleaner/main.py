@@ -1,14 +1,13 @@
 import inspect
+import os
 import sys
 
-from PySide2.QtCore import QSettings, QThread, Signal, QObject
+import cv2
+import numpy as np
+from PySide2.QtCore import QSettings, QThread, Signal
 from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide2.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox
 from ui_mainwindow import Ui_MainWindow
-import os
-import cv2
-import numpy as np
-from PIL import Image
 
 # hack to add Anonymizer submodule to PYTHONPATH
 sys.path.append(os.path.join(os.path.dirname(__file__), "anonymizer"))
@@ -16,13 +15,15 @@ from anonymizer.anonymization.anonymizer import Anonymizer
 from anonymizer.detection.detector import Detector
 from anonymizer.detection.weights import download_weights, get_weights_path
 from anonymizer.obfuscation.obfuscator import Obfuscator
-from tqdm import tqdm
 from math import floor, ceil
 
 
 class MainWindow(QMainWindow):
 
     def __init__(self):
+        """
+        Constructor
+        """
         self.receive_attempts = 0
         self.settings = QSettings("gui.ini", QSettings.IniFormat)
         super(MainWindow, self).__init__()
@@ -36,12 +37,18 @@ class MainWindow(QMainWindow):
         self.setup_blurrer()
 
     def setup_blurrer(self):
+        """
+        Create and connect a blurrer thread
+        """
         self.blurrer = VideoBlurrer()
         self.blurrer.setMaximum.connect(self.setMaximumValue)
         self.blurrer.updateProgress.connect(self.setProgress)
         self.blurrer.finished.connect(self.blurrer_finished)
 
     def button_abort_clicked(self):
+        """
+        Callback for button_abort
+        """
         self.force_blurrer_quit()
         self.ui.progress.setValue(0)
         self.ui.button_start.setEnabled(True)
@@ -49,12 +56,23 @@ class MainWindow(QMainWindow):
         self.setup_blurrer()
 
     def setProgress(self, value: int):
+        """
+        Set progress bar's current progress
+        :param value: progress to be set
+        """
         self.ui.progress.setValue(value)
 
     def setMaximumValue(self, value: int):
+        """
+        Set progress bar's maximum value
+        :param value: value to be set
+        """
         self.ui.progress.setMaximum(value)
 
     def button_start_clicked(self):
+        """
+        Callback for button_start
+        """
 
         self.ui.button_abort.setEnabled(True)
         self.ui.button_start.setEnabled(False)
@@ -78,19 +96,31 @@ class MainWindow(QMainWindow):
         print("Blurrer started!")
 
     def button_source_clicked(self):
+        """
+        Callback for button_source
+        """
         source_path, _ = QFileDialog.getOpenFileName(self, "Open Video", "", "Video Files (*.mkv *.avi *.mov *.mp4)")
         self.ui.line_source.setText(source_path)
 
     def button_target_clicked(self):
-        target_path, _ = QFileDialog.getSaveFileName(self, "Save Video", "", "Video Files (*.mkv *.avi *.mov)")
+        """
+        Callback for button_target
+        """
+        target_path, _ = QFileDialog.getSaveFileName(self, "Save Video", "", "Video Files (*.mkv)")
         self.ui.line_target.setText(target_path)
 
     def force_blurrer_quit(self):
+        """
+        Force blurrer thread to quit
+        """
         if self.blurrer.isRunning():
             self.blurrer.terminate()
             self.blurrer.wait()
 
     def restore(self):
+        """
+        Restores relevent UI settings from ini file
+        """
         for name, obj in inspect.getmembers(self.ui):
             if isinstance(obj, QSpinBox):
                 name = obj.objectName()
@@ -113,20 +143,25 @@ class MainWindow(QMainWindow):
             if isinstance(obj, QRadioButton):
                 name = obj.objectName()
                 value = self.settings.value(name)
-                if value and value == "true": # ouch...
+                if value and value == "true":  # ouch...
                     obj.setChecked(True)
 
     def blurrer_finished(self):
+        """
+        Create a new blurrer, setup UI and notify the user
+        """
+        msg_box = QMessageBox()
+        msg_box.setText("Blurrer terminated.")
+        msg_box.exec_()
         self.setup_blurrer()
         self.ui.button_start.setEnabled(True)
         self.ui.button_abort.setEnabled(False)
         self.ui.progress.setValue(0)
-        msg_box = QMessageBox()
-        msg_box.setText("The video has been modified.")
-        msg_box.exec_()
-
 
     def save(self):
+        """
+        Save all relevant UI parameters
+        """
         for name, obj in inspect.getmembers(self.ui):
             if isinstance(obj, QSpinBox):
                 name = obj.objectName()
@@ -149,23 +184,35 @@ class MainWindow(QMainWindow):
                 self.settings.setValue(name, value)
 
     def closeEvent(self, event):
+        """
+        Overload closeEvent to shut down blurrer and save UI settings
+        :param event:
+        """
         self.force_blurrer_quit()
         self.save()
         print("saved settings")
         QMainWindow.closeEvent(self, event)
 
-class VideoBlurrer(QThread):
 
+class VideoBlurrer(QThread):
     setMaximum = Signal(int)
     updateProgress = Signal(int)
 
     def __init__(self, parameters=None):
+        """
+        Constructor
+        :param parameters: all relevant paremeters for the blurring process
+        """
         super(VideoBlurrer, self).__init__()
         self.parameters = parameters
         print("Worker created")
 
     def run(self):
-        # gather inputs
+        """
+        Run Anonymizer on each frame of the input video
+        """
+
+        # gather inputs from self.parameters
         print("Worker started")
         input_path = self.parameters["input_path"]
         output_path = self.parameters["output_path"]
@@ -183,9 +230,9 @@ class VideoBlurrer(QThread):
         }
 
         # setup anonymizer
-        blur_str = "1,0,1"      # no blurring by Anonymizer - performance concerns
+        blur_str = "1,0,1"  # no blurring by Anonymizer - performance concerns
         if not custom_blur:
-            blur_str = f"{blur_size},0,{int(blur_size/2)}"
+            blur_str = f"{blur_size},0,{int(blur_size / 2)}"
         anonymizer = setup_anonymizer("weights", face_threshold, plate_threshold, blur_str)
 
         cap = cv2.VideoCapture(input_path)
@@ -215,19 +262,21 @@ class VideoBlurrer(QThread):
             # if there are still frames keeping showing the video
             if ret == True:
                 # apply Anonymizer's magic
-                np_frame = cv2_to_npimage(frame)
-                res_frame, new_detections = anonymizer.anonymize_image(image=np_frame, detection_thresholds=detection_thresholds)
+                res_frame, new_detections = anonymizer.anonymize_image(image=frame,
+                                                                       detection_thresholds=detection_thresholds)
                 if custom_blur:
-                    detections = [[x[0], x[1] + 1] for x in detections if x[1] <= blur_memory] # throw out outdated detections, increase age by 1
+                    detections = [[x[0], x[1] + 1] for x in detections if
+                                  x[1] <= blur_memory]  # throw out outdated detections, increase age by 1
                     detections.extend([[x, 0] for x in new_detections])
                     for detection in [x[0] for x in detections]:
                         x_min = floor(detection.y_min)
                         x_max = ceil(detection.y_max)
                         y_min = floor(detection.x_min)
                         y_max = ceil(detection.x_max)
-                        frame[x_min:x_max, y_min:y_max] = cv2.blur(frame[x_min:x_max, y_min:y_max], (blur_size, blur_size))
+                        frame[x_min:x_max, y_min:y_max] = cv2.blur(frame[x_min:x_max, y_min:y_max],
+                                                                   (blur_size, blur_size))
                 else:
-                    frame = npimage_to_cv2(res_frame)
+                    frame = res_frame.astype(np.uint8)
                 writer.write(frame)
 
                 # check for abort here!!
@@ -240,11 +289,6 @@ class VideoBlurrer(QThread):
         cap.release()
         writer.release()
 
-def cv2_to_npimage(cv2_image: np.ndarray):
-    cv2_im = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
-    pil_im = Image.fromarray(cv2_im)
-    np_image = np.array(pil_im)
-    return np_image
 
 def setup_anonymizer(weights_path: str, face_threshold: float, plate_threshold: float, obfuscation_parameters: str):
     """
@@ -257,17 +301,21 @@ def setup_anonymizer(weights_path: str, face_threshold: float, plate_threshold: 
     """
     download_weights(download_directory=weights_path)
 
-    kernel_size, sigma, box_kernel_size = obfuscation_parameters.split(',')
+    kernel_size, sigma, box_kernel_size = [int(x) for x in obfuscation_parameters.split(',')]
+
+    # Anonymizer requires uneven kernel sizes
+    if (kernel_size % 2) == 0:
+        kernel_size += 1
+    if (box_kernel_size % 2) == 0:
+        box_kernel_size += 1
+    print(kernel_size, box_kernel_size)
+
     obfuscator = Obfuscator(kernel_size=int(kernel_size), sigma=float(sigma), box_kernel_size=int(box_kernel_size))
     detectors = {
         'face': Detector(kind='face', weights_path=get_weights_path(weights_path, kind='face')),
         'plate': Detector(kind='plate', weights_path=get_weights_path(weights_path, kind='plate'))
     }
     return Anonymizer(obfuscator=obfuscator, detectors=detectors)
-
-def npimage_to_cv2(np_image):
-    np_array = np.array(np_image)
-    return cv2.cvtColor(np_array, cv2.COLOR_RGB2BGR)
 
 
 if __name__ == "__main__":
