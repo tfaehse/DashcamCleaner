@@ -15,7 +15,7 @@ from anonymizer.anonymization.anonymizer import Anonymizer
 from anonymizer.detection.detector import Detector
 from anonymizer.detection.weights import download_weights, get_weights_path
 from anonymizer.obfuscation.obfuscator import Obfuscator
-from math import floor, ceil
+from math import floor, ceil, sqrt
 
 
 class MainWindow(QMainWindow):
@@ -86,7 +86,8 @@ class MainWindow(QMainWindow):
             "blur_size": self.ui.spin_blur.value(),
             "blur_memory": self.ui.spin_memory.value(),
             "face_threshold": self.ui.double_spin_face.value(),
-            "plate_threshold": self.ui.double_spin_plate.value()
+            "plate_threshold": self.ui.double_spin_plate.value(),
+            "roi_multi": self.ui.double_spin_roimulti.value()
         }
         if self.blurrer:
             self.blurrer.parameters = parameters
@@ -205,7 +206,38 @@ class VideoBlurrer(QThread):
         """
         super(VideoBlurrer, self).__init__()
         self.parameters = parameters
+        self.detections = []
         print("Worker created")
+
+    def apply_blur(self, frame: np.array, new_detections: list, frame_width: int, frame_height: int):
+
+        # gather inputs from self.parameters
+        blur_size = self.parameters["blur_size"]
+        blur_memory = self.parameters["blur_memory"]
+        roi_multi = self.parameters["roi_multi"]
+
+        # gather all currently relevant detections
+        self.detections = [[x[0], x[1] + 1] for x in self.detections if
+                           x[1] <= blur_memory]  # throw out outdated detections, increase age by 1
+        for detection in new_detections:
+            width = detection.x_max - detection.x_min
+            height = detection.y_max - detection.y_min
+
+            # scale detection by ROI multiplyer - 2x means a twofold increase in AREA, not circumference
+            detection.x_min -= ((sqrt(roi_multi) - 1) * width) / 2
+            detection.x_max += ((sqrt(roi_multi) - 1) * width) / 2
+            detection.y_min -= ((sqrt(roi_multi) - 1) * height) / 2
+            detection.y_max += ((sqrt(roi_multi) - 1) * height) / 2
+
+            self.detections.append([detection, 0])
+
+        for detection in [x[0] for x in self.detections]:
+            x_min = max(floor(detection.y_min), 0)
+            x_max = min(floor(detection.y_max), frame_height)
+            y_min = max(floor(detection.x_min), 0)
+            y_max = min(floor(detection.x_max), frame_width)
+            frame[x_min:x_max, y_min:y_max] = cv2.blur(frame[x_min:x_max, y_min:y_max], (blur_size, blur_size))
+        return frame
 
     def run(self):
         """
@@ -219,7 +251,6 @@ class VideoBlurrer(QThread):
         fps = self.parameters["fps"]
         custom_blur = self.parameters["custom_blur"]
         blur_size = self.parameters["blur_size"]
-        blur_memory = self.parameters["blur_memory"]
         face_threshold = self.parameters["face_threshold"]
         plate_threshold = self.parameters["plate_threshold"]
 
@@ -254,7 +285,6 @@ class VideoBlurrer(QThread):
 
         # while the video is running the loop will keep running
         current_frame = 0
-        detections = []
         while cap.isOpened():
             # returns each frame
             ret, frame = cap.read()
@@ -265,16 +295,7 @@ class VideoBlurrer(QThread):
                 res_frame, new_detections = anonymizer.anonymize_image(image=frame,
                                                                        detection_thresholds=detection_thresholds)
                 if custom_blur:
-                    detections = [[x[0], x[1] + 1] for x in detections if
-                                  x[1] <= blur_memory]  # throw out outdated detections, increase age by 1
-                    detections.extend([[x, 0] for x in new_detections])
-                    for detection in [x[0] for x in detections]:
-                        x_min = floor(detection.y_min)
-                        x_max = ceil(detection.y_max)
-                        y_min = floor(detection.x_min)
-                        y_max = ceil(detection.x_max)
-                        frame[x_min:x_max, y_min:y_max] = cv2.blur(frame[x_min:x_max, y_min:y_max],
-                                                                   (blur_size, blur_size))
+                    frame = self.apply_blur(frame, new_detections, width, height)
                 else:
                     frame = res_frame.astype(np.uint8)
                 writer.write(frame)
@@ -285,7 +306,8 @@ class VideoBlurrer(QThread):
             current_frame += 1
             self.updateProgress.emit(current_frame)
 
-        # stop the video, and gets rid of the window that it opens up
+        # clear members
+        self.detections = []
         cap.release()
         writer.release()
 
@@ -308,7 +330,6 @@ def setup_anonymizer(weights_path: str, face_threshold: float, plate_threshold: 
         kernel_size += 1
     if (box_kernel_size % 2) == 0:
         box_kernel_size += 1
-    print(kernel_size, box_kernel_size)
 
     obfuscator = Obfuscator(kernel_size=int(kernel_size), sigma=float(sigma), box_kernel_size=int(box_kernel_size))
     detectors = {
