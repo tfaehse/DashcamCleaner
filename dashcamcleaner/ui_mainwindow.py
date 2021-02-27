@@ -17,7 +17,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(603, 158)
+        MainWindow.resize(605, 161)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -119,6 +119,24 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.radio_custom_blur)
 
+        self.label_6 = QLabel(self.centralwidget)
+        self.label_6.setObjectName(u"label_6")
+
+        self.horizontalLayout_4.addWidget(self.label_6)
+
+        self.double_spin_roimulti = QDoubleSpinBox(self.centralwidget)
+        self.double_spin_roimulti.setObjectName(u"double_spin_roimulti")
+        self.double_spin_roimulti.setMinimum(0.800000000000000)
+        self.double_spin_roimulti.setMaximum(10.000000000000000)
+        self.double_spin_roimulti.setSingleStep(0.050000000000000)
+        self.double_spin_roimulti.setValue(1.000000000000000)
+
+        self.horizontalLayout_4.addWidget(self.double_spin_roimulti)
+
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_4.addItem(self.horizontalSpacer)
+
 
         self.verticalLayout.addLayout(self.horizontalLayout_4)
 
@@ -138,6 +156,7 @@ class Ui_MainWindow(object):
 
         self.button_abort = QPushButton(self.centralwidget)
         self.button_abort.setObjectName(u"button_abort")
+        self.button_abort.setEnabled(False)
 
         self.horizontalLayout_5.addWidget(self.button_abort)
 
@@ -161,6 +180,7 @@ class Ui_MainWindow(object):
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Face threshold:", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Plate threshold:", None))
         self.radio_custom_blur.setText(QCoreApplication.translate("MainWindow", u"Use custom blur", None))
+        self.label_6.setText(QCoreApplication.translate("MainWindow", u"ROI multiplier", None))
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
     # retranslateUi
