@@ -83,7 +83,7 @@ The UI is fairly self-explanatory: To use the tool, you need to:
 
 The options adjust the resulting video's frames per second, the frame memory optimization laid out in [the roadmap](Roadmap). Blur size, face and plate thresholds are Anonymizer parameters - they adjust the size of the Gaussian blur and the detection thresholds for the detector. 
 
-Experience has shown that Anonymizer's blurring algorithm, while producing beautiful results, can get a bit slow for larger resolutions. Checking the custom blur radio button results in a much simpler and faster OpenCV solution. Frame memory is only possible with this option checked!
+Experience has shown that Anonymizer's blurring algorithm, while producing beautiful results, can get a bit slow for larger resolutions. Checking the custom blur radio button results in a much simpler and faster OpenCV solution. Increasing the area to be blurred and using ROI info from previous frames is only possible using this method.
 
 For reference: a 1080p30fps video from my 70mai 1S is blurred at around 1,2 frames per second, ie a 1 minute clip takes <30 minutes to blur on a 5820K/GTX1060. Not perfect, but it removes a lot of manual labor :) 
 
@@ -93,7 +93,8 @@ For reference: a 1080p30fps video from my 70mai 1S is blurred at around 1,2 fram
 As of now, each frame is treated individually. Issues arise when a plate or a face is missed by Anonymizer in a single frame, as it will be clearly visible in the video and require manual correction. Possible ideas to combat this behavior include:
 - a "frame memory": plate and face positions from the last n frames are also blurred → implemented, useful for static plates/faces
 - proper plate/face tracking across frames
-- enlarging of blurred regions
+- enlarging of blurred regions → implemented, useful in combination with frame memory - most single missed frames can be captured this way, unless very quick movement is happening
+- "light" frame tracking, i.e. first getting all ROI positions for the whole video using Anonymizer (still on a per-frame basis) and using static analysis to establish links between ROIs across frames with the goal of approximating the position of missed frames
 
 
 <!-- CONTRIBUTING -->
