@@ -65,7 +65,7 @@ Further, h264 was chosen for the output video file. You can download an open sou
 
 1. Clone the repo
    ```sh
-   git clone --recurse-submodules https://github.com/tfaehse/DashcamCleaner.git
+   git clone https://github.com/tfaehse/DashcamCleaner.git
    ```
 2. Set up Python environment and install requisites
    ```sh
