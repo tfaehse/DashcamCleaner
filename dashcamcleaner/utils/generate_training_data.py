@@ -81,19 +81,20 @@ class TrainingDataGenerator:
                 for training_set in ["train", "val"]:
                     os.makedirs(os.path.join(pic_out, folder, training_set), exist_ok=True)
 
-        # train videos
-        for index, vid in tqdm(randomized_videos[:train_videos], desc="Processing training video file"):
-            self.labeled_data_from_video(vid, index, label_format, "train")
-
-        # validate videos
-        for index, vid in tqdm(randomized_videos[train_videos:], desc="Processing validation video file"):
-            self.labeled_data_from_video(vid, index, label_format, "val")
-
         # train pictures
         self.labeled_data_from_pictures(randomized_pictures[:train_pictures], label_format, "train")
 
         # validate pictures
         self.labeled_data_from_pictures(randomized_pictures[train_pictures:], label_format, "val")
+
+        # train videos
+        for index, vid in enumerate(tqdm(randomized_videos[:train_videos], desc="Processing training video file")):
+            self.labeled_data_from_video(vid, index, label_format, "train")
+
+        # validate videos
+        for index, vid in enumerate(tqdm(randomized_videos[train_videos:], desc="Processing validation video file")):
+            self.labeled_data_from_video(vid, index, label_format, "val")
+
 
     def labeled_data_from_video(self, video_path: str, vid_num: int, label_format, folder_suffix, roi_multi=1.2):
         """
@@ -201,8 +202,8 @@ class TrainingDataGenerator:
         """
         boxes = []
         detection_thresholds = {
-            "face": 0.25,
-            "plate": 0.1
+            "face": 0.3,
+            "plate": 0.2
         }
 
         counter = 0
@@ -231,7 +232,8 @@ class TrainingDataGenerator:
                 boxes.append(
                     {"name": file_name, "type": detection.kind, "xmin": x_min, "xmax": x_max, "ymin": y_min,
                      "ymax": y_max, "width": frame_width, "height": frame_height})
-            cv2.imwrite(path_name, frame)
+            if len(new_detections) > 0:
+                cv2.imwrite(path_name, frame)
             counter += 1
         df = pd.DataFrame(boxes)
 

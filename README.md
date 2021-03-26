@@ -48,7 +48,7 @@ The caveats of this solution, or at least the current state of this repo, all re
 - only German license plates have been used
 - while FullHD, the input images are very heavily compressed
 - only few input frames actually contained faces
-These issues can be overcome by using the same routine for data creation and training, but with more diverse inputs - i.e. higher quality videos/images and media containing more faces
+These issues can be overcome by using the same routine for data creation and training, but with more diverse inputs - i.e. higher quality videos/images and media containing more faces. The weights in this repo will be updated as training progresses, using more epochs and more data.
 
 <!-- GETTING STARTED -->
 ## Getting Started
