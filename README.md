@@ -43,7 +43,7 @@
 
 This project is a result of data protection laws that require identifiable information to be censored in media that is posted to the internet. Dashcam videos in particular tend to be fairly cumbersome to manually edit, so this tool aims to automate the task. Thus, it offers a simple Qt GUI in Python that apply's understand-ai's [Anonymizer](https://github.com/understand-ai/anonymizer) to each frame of an input video. 
 
-Update: This project has undergone massive changes. Anonymizer has been replaced by a custom trained YOLOv5 net that delivers much higher performance and drastically improves the amount of control over the inner workings of the system. I have written a short article on how to leverage Anonymizer to generate labeled data for training here:
+Update: This project has undergone massive changes, the way there is described on [medium](https://medium.com/@tfaehse/making-dashcam-videos-gdpr-compliant-f9832883fe94). Anonymizer has been replaced by a custom trained YOLOv5 net that delivers much higher performance and drastically improves the amount of control over the inner workings of the system. I have written a short article on how to leverage Anonymizer to generate labeled data for training here:
 The caveats of this solution, or at least the current state of this repo, all relate to the videos used to train YOLO:
 - only German license plates have been used
 - while FullHD, the input images are very heavily compressed
