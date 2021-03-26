@@ -1,21 +1,14 @@
 import inspect
-import os
 import sys
+from math import floor, ceil, sqrt
 
 import cv2
 import numpy as np
+import torch
 from PySide2.QtCore import QSettings, QThread, Signal
 from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide2.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox
 from ui_mainwindow import Ui_MainWindow
-
-# hack to add Anonymizer submodule to PYTHONPATH
-sys.path.append(os.path.join(os.path.dirname(__file__), "anonymizer"))
-from anonymizer.anonymization.anonymizer import Anonymizer
-from anonymizer.detection.detector import Detector
-from anonymizer.detection.weights import download_weights, get_weights_path
-from anonymizer.obfuscation.obfuscator import Obfuscator
-from math import floor, ceil, sqrt
 
 
 class MainWindow(QMainWindow):
@@ -26,6 +19,7 @@ class MainWindow(QMainWindow):
         """
         self.receive_attempts = 0
         self.settings = QSettings("gui.ini", QSettings.IniFormat)
+        self.blurrer = None
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -81,13 +75,12 @@ class MainWindow(QMainWindow):
         parameters = {
             "input_path": self.ui.line_source.text(),
             "output_path": self.ui.line_target.text(),
-            "fps": self.ui.spin_fps.value(),
-            "custom_blur": self.ui.radio_custom_blur.isChecked(),
+            "weights_path": "weights/yolov5s_weights.pt",
             "blur_size": self.ui.spin_blur.value(),
             "blur_memory": self.ui.spin_memory.value(),
-            "face_threshold": self.ui.double_spin_face.value(),
-            "plate_threshold": self.ui.double_spin_plate.value(),
-            "roi_multi": self.ui.double_spin_roimulti.value()
+            "threshold": self.ui.double_spin_threshold.value(),
+            "roi_multi": self.ui.double_spin_roimulti.value(),
+            "inference_scale": self.ui.double_spin_size.value()
         }
         if self.blurrer:
             self.blurrer.parameters = parameters
@@ -154,7 +147,8 @@ class MainWindow(QMainWindow):
         msg_box = QMessageBox()
         msg_box.setText("Blurrer terminated.")
         msg_box.exec_()
-        self.setup_blurrer()
+        if not self.blurrer:
+            self.setup_blurrer()
         self.ui.button_start.setEnabled(True)
         self.ui.button_abort.setEnabled(False)
         self.ui.progress.setValue(0)
@@ -195,6 +189,26 @@ class MainWindow(QMainWindow):
         QMainWindow.closeEvent(self, event)
 
 
+class Box:
+    def __init__(self, x_min, y_min, x_max, y_max, score, kind):
+        self.x_min = float(x_min)
+        self.y_min = float(y_min)
+        self.x_max = float(x_max)
+        self.y_max = float(y_max)
+        self.score = float(score)
+        self.kind = str(kind)
+
+    def __repr__(self):
+        return f'Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}, {self.score}, {self.kind})'
+
+    def __eq__(self, other):
+        if isinstance(other, Box):
+            return (self.x_min == other.x_min and self.y_min == other.y_min and
+                    self.x_max == other.x_max and self.y_max == other.y_max and
+                    self.score == other.score and self.kind == other.kind)
+        return False
+
+
 class VideoBlurrer(QThread):
     setMaximum = Signal(int)
     updateProgress = Signal(int)
@@ -207,9 +221,17 @@ class VideoBlurrer(QThread):
         super(VideoBlurrer, self).__init__()
         self.parameters = parameters
         self.detections = []
+        self.detector = setup_detector("weights/yolov5s_weights.pt")
         print("Worker created")
 
-    def apply_blur(self, frame: np.array, new_detections: list, frame_width: int, frame_height: int):
+    def apply_blur(self, frame: np.array, new_detections: list):
+        """
+        Apply Gaussian blur to regions of interests
+        :param frame: input image
+        :param new_detections: list of newly detected faces and plates
+        :return: processed image
+        """
+        frame_height, frame_width = frame.shape[:2]
 
         # gather inputs from self.parameters
         blur_size = self.parameters["blur_size"]
@@ -223,120 +245,111 @@ class VideoBlurrer(QThread):
             width = detection.x_max - detection.x_min
             height = detection.y_max - detection.y_min
 
-            # scale detection by ROI multiplyer - 2x means a twofold increase in AREA, not circumference
-            detection.x_min -= ((sqrt(roi_multi) - 1) * width) / 2
-            detection.x_max += ((sqrt(roi_multi) - 1) * width) / 2
-            detection.y_min -= ((sqrt(roi_multi) - 1) * height) / 2
-            detection.y_max += ((sqrt(roi_multi) - 1) * height) / 2
+            # scale detection by ROI multiplier - 2x means a twofold increase in AREA, not circumference
+            x_min = detection.x_min - ((sqrt(roi_multi) - 1) * width) / 2
+            x_max = detection.x_max + ((sqrt(roi_multi) - 1) * width) / 2
+            y_min = detection.y_min - ((sqrt(roi_multi) - 1) * height) / 2
+            y_max = detection.y_max + ((sqrt(roi_multi) - 1) * height) / 2
+
+            detection.x_min = max(floor(x_min), 0)
+            detection.x_max = min(floor(x_max), frame_width)
+            detection.y_min = max(floor(y_min), 0)
+            detection.y_max = min(floor(y_max), frame_height)
 
             self.detections.append([detection, 0])
 
         for detection in [x[0] for x in self.detections]:
-            x_min = max(floor(detection.y_min), 0)
-            x_max = min(floor(detection.y_max), frame_height)
-            y_min = max(floor(detection.x_min), 0)
-            y_max = min(floor(detection.x_max), frame_width)
-            frame[x_min:x_max, y_min:y_max] = cv2.blur(frame[x_min:x_max, y_min:y_max], (blur_size, blur_size))
+            x_min = detection.x_min
+            x_max = detection.x_max
+            y_min = detection.y_min
+            y_max = detection.y_max
+            frame[y_min:y_max, x_min:x_max] = cv2.blur(frame[y_min:y_max, x_min:x_max], (blur_size, blur_size))
         return frame
+
+    def detect_identifiable_information(self, image: np.array):
+        """
+        Run plate and face detection on an input image
+        :param image: input image
+        :return: detected faces and plates
+        """
+        scale = ceil(image.shape[1] * self.parameters[
+            "inference_scale"] / self.detector.stride.max()) * self.detector.stride.max()
+        results = self.detector(image, size=scale.item())
+        boxes = []
+        for res in results.xyxy[0]:
+            boxes.append(Box(res[0].item(), res[1].item(), res[2].item(), res[3].item(), res[4].item(), res[5].item()))
+        return boxes
 
     def run(self):
         """
-        Run Anonymizer on each frame of the input video
+        Write a copy of the input video stripped of identifiable information, i.e. faces and license plates
         """
 
         # gather inputs from self.parameters
         print("Worker started")
         input_path = self.parameters["input_path"]
         output_path = self.parameters["output_path"]
-        fps = self.parameters["fps"]
-        custom_blur = self.parameters["custom_blur"]
-        blur_size = self.parameters["blur_size"]
-        face_threshold = self.parameters["face_threshold"]
-        plate_threshold = self.parameters["plate_threshold"]
+        threshold = self.parameters["threshold"]
 
-        # prepare Anonymizer parameters
-        detection_thresholds = {
-            "face": face_threshold,
-            "plate": plate_threshold
-        }
+        # customize detector
+        self.detector.conf = threshold
 
-        # setup anonymizer
-        blur_str = "1,0,1"  # no blurring by Anonymizer - performance concerns
-        if not custom_blur:
-            blur_str = f"{blur_size},0,{int(blur_size / 2)}"
-        anonymizer = setup_anonymizer("weights", face_threshold, plate_threshold, blur_str)
-
+        # open video file
         cap = cv2.VideoCapture(input_path)
 
-        # gets the height and width of each frame
+        # get the height and width of each frame
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
 
-        # saves the video to a file
+        # save the video to a file
         fourcc = cv2.VideoWriter_fourcc(*'H264')
         writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
+        # update GUI's progress bar on its maximum frames
         self.setMaximum.emit(length)
+        profiler.enable()
 
-        # to make video actual speed
         if cap.isOpened() == False:
             print('error file not found')
+            return
 
-        # while the video is running the loop will keep running
+        # loop through video
         current_frame = 0
         while cap.isOpened():
-            # returns each frame
             ret, frame = cap.read()
 
-            # if there are still frames keeping showing the video
             if ret == True:
-                # apply Anonymizer's magic
-                res_frame, new_detections = anonymizer.anonymize_image(image=frame,
-                                                                       detection_thresholds=detection_thresholds)
-                if custom_blur:
-                    frame = self.apply_blur(frame, new_detections, width, height)
-                else:
-                    frame = res_frame.astype(np.uint8)
+                new_detections = self.detect_identifiable_information(frame.copy())
+                frame = self.apply_blur(frame, new_detections)
                 writer.write(frame)
 
-                # check for abort here!!
             else:
                 break
+
             current_frame += 1
             self.updateProgress.emit(current_frame)
 
-        # clear members
         self.detections = []
         cap.release()
         writer.release()
 
 
-def setup_anonymizer(weights_path: str, face_threshold: float, plate_threshold: float, obfuscation_parameters: str):
+def setup_detector(weights_path: str):
     """
-    Sets up and configures an Anonymizer object
-    :param weights_path: directory to Anonymizer's weights
-    :param face_threshold: threshold for face detection
-    :param plate_threshold: threshold for plate detection
-    :param obfuscation_parameters: parameters for Gaussian blur
-    :return: Anonymizer object
+    Load YOLOv5 detector from torch hub and update the detector with this repo's weights
+    :param weights_path: path to .pt file with this repo's weights
+    :return: initialized yolov5 detector
     """
-    download_weights(download_directory=weights_path)
-
-    kernel_size, sigma, box_kernel_size = [int(x) for x in obfuscation_parameters.split(',')]
-
-    # Anonymizer requires uneven kernel sizes
-    if (kernel_size % 2) == 0:
-        kernel_size += 1
-    if (box_kernel_size % 2) == 0:
-        box_kernel_size += 1
-
-    obfuscator = Obfuscator(kernel_size=int(kernel_size), sigma=float(sigma), box_kernel_size=int(box_kernel_size))
-    detectors = {
-        'face': Detector(kind='face', weights_path=get_weights_path(weights_path, kind='face')),
-        'plate': Detector(kind='plate', weights_path=get_weights_path(weights_path, kind='plate'))
-    }
-    return Anonymizer(obfuscator=obfuscator, detectors=detectors)
+    model = torch.hub.load('ultralytics/yolov5', 'custom', weights_path)
+    if torch.cuda.is_available():
+        print(f"Using {torch.cuda.get_device_name(torch.cuda.current_device())}.")
+        torch.backends.cudnn.benchmark = True
+        model.cuda()
+    else:
+        print("Using CPU.")
+    return model
 
 
 if __name__ == "__main__":
