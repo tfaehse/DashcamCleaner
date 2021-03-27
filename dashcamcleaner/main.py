@@ -309,7 +309,6 @@ class VideoBlurrer(QThread):
 
         # update GUI's progress bar on its maximum frames
         self.setMaximum.emit(length)
-        profiler.enable()
 
         if cap.isOpened() == False:
             print('error file not found')
