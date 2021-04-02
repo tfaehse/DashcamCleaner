@@ -1,5 +1,7 @@
 import inspect
+import os
 import sys
+from glob import glob
 from math import floor, ceil, sqrt
 
 import cv2
@@ -8,6 +10,7 @@ import torch
 from PySide2.QtCore import QSettings, QThread, Signal
 from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide2.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox
+
 from ui_mainwindow import Ui_MainWindow
 
 
@@ -24,20 +27,31 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.restore()
+        self.load_weights_options()
         self.ui.button_source.clicked.connect(self.button_source_clicked)
         self.ui.button_start.clicked.connect(self.button_start_clicked)
         self.ui.button_target.clicked.connect(self.button_target_clicked)
         self.ui.button_abort.clicked.connect(self.button_abort_clicked)
+        self.ui.combo_box_weights.currentIndexChanged.connect(self.setup_blurrer)
+
+    def load_weights_options(self):
+        for net_path in glob(f"./weights/*.pt"):
+            clean_name = os.path.splitext(os.path.basename(net_path))[0]
+            self.ui.combo_box_weights.addItem(clean_name)
         self.setup_blurrer()
 
     def setup_blurrer(self):
         """
         Create and connect a blurrer thread
         """
-        self.blurrer = VideoBlurrer()
+        weights_name = self.ui.combo_box_weights.currentText()
+        self.blurrer = VideoBlurrer(weights_name)
         self.blurrer.setMaximum.connect(self.setMaximumValue)
         self.blurrer.updateProgress.connect(self.setProgress)
         self.blurrer.finished.connect(self.blurrer_finished)
+        msg_box = QMessageBox()
+        msg_box.setText(f"Successfully loaded {weights_name}.pt")
+        msg_box.exec_()
 
     def button_abort_clicked(self):
         """
@@ -213,15 +227,17 @@ class VideoBlurrer(QThread):
     setMaximum = Signal(int)
     updateProgress = Signal(int)
 
-    def __init__(self, parameters=None):
+    def __init__(self, weights_name, parameters=None):
         """
         Constructor
+        :param weights_name: file name of the weights to be used
         :param parameters: all relevant paremeters for the blurring process
         """
         super(VideoBlurrer, self).__init__()
         self.parameters = parameters
         self.detections = []
-        self.detector = setup_detector("weights/yolov5s_weights.pt")
+        weights_path = os.path.join("weights", f"{weights_name}.pt")
+        self.detector = setup_detector(weights_path)
         print("Worker created")
 
     def apply_blur(self, frame: np.array, new_detections: list):

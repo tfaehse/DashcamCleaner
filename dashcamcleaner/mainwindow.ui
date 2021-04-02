@@ -124,6 +124,16 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_4">
       <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Weights</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="combo_box_weights"/>
+      </item>
+      <item>
        <widget class="QLabel" name="label_6">
         <property name="text">
          <string>ROI enlargement</string>
