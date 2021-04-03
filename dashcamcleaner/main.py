@@ -205,12 +205,40 @@ class MainWindow(QMainWindow):
 
 class Box:
     def __init__(self, x_min, y_min, x_max, y_max, score, kind):
-        self.x_min = float(x_min)
-        self.y_min = float(y_min)
-        self.x_max = float(x_max)
-        self.y_max = float(y_max)
+        self.x_min = int(x_min)
+        self.y_min = int(y_min)
+        self.x_max = int(x_max)
+        self.y_max = int(y_max)
         self.score = float(score)
         self.kind = str(kind)
+
+    def coords_as_slices(self):
+        """
+        Calculate integer slices of the box coordinates
+        :return: Slices of box coordinates
+        """
+        return slice(int(self.y_min), int(self.y_max)), slice(int(self.x_min), int(self.x_max))
+
+    def scale(self, shape, multiplier):
+        """
+        Scales a bounding box by a size multiplier and while respecting image dimensions
+        :param shape: shape of the image
+        :param multiplier: multiplier to scale the detection with
+        :return: scaled Boxs
+        """
+        frame_height, frame_width = shape[:2]
+
+        width = self.x_max - self.x_min
+        height = self.y_max - self.y_min
+
+        # scale detection by ROI multiplier - 2x means a twofold increase in AREA, not circumference
+        x_min = self.x_min - ((sqrt(multiplier) - 1) * width) / 2
+        x_max = self.x_max + ((sqrt(multiplier) - 1) * width) / 2
+        y_min = self.y_min - ((sqrt(multiplier) - 1) * height) / 2
+        y_max = self.y_max + ((sqrt(multiplier) - 1) * height) / 2
+        scaled_detection = Box(max(floor(x_min), 0), max(floor(y_min), 0), min(floor(x_max), frame_width),
+                               min(floor(y_max), frame_height), self.score, self.kind)
+        return scaled_detection
 
     def __repr__(self):
         return f'Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}, {self.score}, {self.kind})'
@@ -247,39 +275,27 @@ class VideoBlurrer(QThread):
         :param new_detections: list of newly detected faces and plates
         :return: processed image
         """
-        frame_height, frame_width = frame.shape[:2]
-
         # gather inputs from self.parameters
         blur_size = self.parameters["blur_size"]
         blur_memory = self.parameters["blur_memory"]
         roi_multi = self.parameters["roi_multi"]
 
-        # gather all currently relevant detections
+        # gather and process all currently relevant detections
         self.detections = [[x[0], x[1] + 1] for x in self.detections if
                            x[1] <= blur_memory]  # throw out outdated detections, increase age by 1
         for detection in new_detections:
-            width = detection.x_max - detection.x_min
-            height = detection.y_max - detection.y_min
-
-            # scale detection by ROI multiplier - 2x means a twofold increase in AREA, not circumference
-            x_min = detection.x_min - ((sqrt(roi_multi) - 1) * width) / 2
-            x_max = detection.x_max + ((sqrt(roi_multi) - 1) * width) / 2
-            y_min = detection.y_min - ((sqrt(roi_multi) - 1) * height) / 2
-            y_max = detection.y_max + ((sqrt(roi_multi) - 1) * height) / 2
-
-            detection.x_min = max(floor(x_min), 0)
-            detection.x_max = min(floor(x_max), frame_width)
-            detection.y_min = max(floor(y_min), 0)
-            detection.y_max = min(floor(y_max), frame_height)
-
-            self.detections.append([detection, 0])
+            scaled_detection = detection.scale(frame.shape, roi_multi)
+            self.detections.append([scaled_detection, 0])
 
         for detection in [x[0] for x in self.detections]:
-            x_min = detection.x_min
-            x_max = detection.x_max
-            y_min = detection.y_min
-            y_max = detection.y_max
-            frame[y_min:y_max, x_min:x_max] = cv2.blur(frame[y_min:y_max, x_min:x_max], (blur_size, blur_size))
+            # two-fold blurring: softer blur on the edge of the box to look smoother and less abrupt
+            outer_box = detection
+            inner_box = detection.scale(frame.shape, 0.8)
+            frame[outer_box.coords_as_slices()] = cv2.blur(
+                frame[outer_box.coords_as_slices()], (blur_size, blur_size))
+            frame[inner_box.coords_as_slices()] = cv2.blur(
+                frame[inner_box.coords_as_slices()],
+                (blur_size * 2 + 1, blur_size * 2 + 1))
         return frame
 
     def detect_identifiable_information(self, image: np.array):
