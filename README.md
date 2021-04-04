@@ -88,13 +88,14 @@ The UI is fairly self-explanatory: To use the tool, you need to:
 The options adjust parameters of the detection algorithm and post processing options laid out in [the roadmap](Roadmap). The detection threshold and inference size are direct parameters of the YOLOv5 detector, they provide the main controls for detection quality and speed that can be tweaked. In short:
 - Each recognized object, i.e. a face or a license plate, possesses a confidence value that describes how likely it is to actually be a license plate. Increasing the threshold results in fewer false positives, at the cost of potential false negatives
 - The performance of the detector depends on the input size of the image, so the resolution of the video. The inference scale option allows downscaling the input for detections only. The result is faster detection with reduced precision. _NOTE:_ The output video still uses the full resolution from the input video, there is no loss in quality! Only detection runs at a lower resolution.
- 
+
 The blur size determines how strongly detected faces and license plates are blurred. Boxes around faces and license plates can be enlarged by a factor between 0.8 and 10 using the ROI enlargement dial.
 
 Sometimes, a license plate might be missed for just one frame. This one frame, usually 1/30th of a second long, still means the license plate or face could easily be identified - a computationally very cheap (as opposed to increasing the inference scale) way to fix such false negatives can be the frame memory option. In essence, it blurs not only the detected boxes in the current frame, it also blurs regions that were detected in __n__ frames before. Especially in combination with ROI enlargement and videos without very quick movement, this method can hide away missed detections.
 
 For reference: even at 1080p inference, i.e. an inference scale of 1, a 1080p30fps video from my 70mai 1S is now blurred at around 10 frames per second, a 1 minute clip takes ~3 minutes to blur on a 5820K/GTX1060. A 10x improvement over the previous solution, with better results!
 
+__Update:__ this version supports dynamically loading weights files (.pt) in the weights subfolder. Later on, weights for nets trained at different resolutions will be uploaded and updated with new training data.
 
 <!-- ROADMAP -->
 ## Roadmap
