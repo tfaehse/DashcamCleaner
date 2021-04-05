@@ -59,9 +59,8 @@ class VideoBlurrer(QThread):
         :param image: input image
         :return: detected faces and plates
         """
-        scale = ceil(image.shape[1] * self.parameters[
-            "inference_scale"] / self.detector.stride.max()) * self.detector.stride.max()
-        results = self.detector(image, size=scale.item())
+        scale = self.parameters["inference_size"]
+        results = self.detector(image, size=scale)
         boxes = []
         for res in results.xyxy[0]:
             boxes.append(Box(res[0].item(), res[1].item(), res[2].item(), res[3].item(), res[4].item(), res[5].item()))

@@ -17,7 +17,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(520, 161)
+        MainWindow.resize(534, 161)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -56,6 +56,13 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
+        self.line = QFrame(self.centralwidget)
+        self.line.setObjectName(u"line")
+        self.line.setFrameShape(QFrame.HLine)
+        self.line.setFrameShadow(QFrame.Sunken)
+
+        self.verticalLayout.addWidget(self.line)
+
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.label_2 = QLabel(self.centralwidget)
@@ -91,21 +98,29 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.double_spin_threshold)
 
-        self.label_4 = QLabel(self.centralwidget)
-        self.label_4.setObjectName(u"label_4")
+        self.label_6 = QLabel(self.centralwidget)
+        self.label_6.setObjectName(u"label_6")
 
-        self.horizontalLayout_3.addWidget(self.label_4)
+        self.horizontalLayout_3.addWidget(self.label_6)
 
-        self.double_spin_size = QDoubleSpinBox(self.centralwidget)
-        self.double_spin_size.setObjectName(u"double_spin_size")
-        self.double_spin_size.setMaximum(1.000000000000000)
-        self.double_spin_size.setSingleStep(0.010000000000000)
-        self.double_spin_size.setValue(1.000000000000000)
+        self.double_spin_roimulti = QDoubleSpinBox(self.centralwidget)
+        self.double_spin_roimulti.setObjectName(u"double_spin_roimulti")
+        self.double_spin_roimulti.setMinimum(0.800000000000000)
+        self.double_spin_roimulti.setMaximum(10.000000000000000)
+        self.double_spin_roimulti.setSingleStep(0.050000000000000)
+        self.double_spin_roimulti.setValue(1.000000000000000)
 
-        self.horizontalLayout_3.addWidget(self.double_spin_size)
+        self.horizontalLayout_3.addWidget(self.double_spin_roimulti)
 
 
         self.verticalLayout.addLayout(self.horizontalLayout_3)
+
+        self.line_2 = QFrame(self.centralwidget)
+        self.line_2.setObjectName(u"line_2")
+        self.line_2.setFrameShape(QFrame.HLine)
+        self.line_2.setFrameShadow(QFrame.Sunken)
+
+        self.verticalLayout.addWidget(self.line_2)
 
         self.horizontalLayout_4 = QHBoxLayout()
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
@@ -119,19 +134,18 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.combo_box_weights)
 
-        self.label_6 = QLabel(self.centralwidget)
-        self.label_6.setObjectName(u"label_6")
+        self.label_4 = QLabel(self.centralwidget)
+        self.label_4.setObjectName(u"label_4")
 
-        self.horizontalLayout_4.addWidget(self.label_6)
+        self.horizontalLayout_4.addWidget(self.label_4)
 
-        self.double_spin_roimulti = QDoubleSpinBox(self.centralwidget)
-        self.double_spin_roimulti.setObjectName(u"double_spin_roimulti")
-        self.double_spin_roimulti.setMinimum(0.800000000000000)
-        self.double_spin_roimulti.setMaximum(10.000000000000000)
-        self.double_spin_roimulti.setSingleStep(0.050000000000000)
-        self.double_spin_roimulti.setValue(1.000000000000000)
+        self.combo_box_scale = QComboBox(self.centralwidget)
+        self.combo_box_scale.addItem("")
+        self.combo_box_scale.addItem("")
+        self.combo_box_scale.addItem("")
+        self.combo_box_scale.setObjectName(u"combo_box_scale")
 
-        self.horizontalLayout_4.addWidget(self.double_spin_roimulti)
+        self.horizontalLayout_4.addWidget(self.combo_box_scale)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -139,6 +153,13 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout.addLayout(self.horizontalLayout_4)
+
+        self.line_3 = QFrame(self.centralwidget)
+        self.line_3.setObjectName(u"line_3")
+        self.line_3.setFrameShape(QFrame.HLine)
+        self.line_3.setFrameShadow(QFrame.Sunken)
+
+        self.verticalLayout.addWidget(self.line_3)
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
@@ -177,9 +198,13 @@ class Ui_MainWindow(object):
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Frame memory:", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"Blur size:", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Detection threshold:", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Inference scale", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Weights", None))
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"ROI enlargement", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Weights", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Inference scale", None))
+        self.combo_box_scale.setItemText(0, QCoreApplication.translate("MainWindow", u"360p", None))
+        self.combo_box_scale.setItemText(1, QCoreApplication.translate("MainWindow", u"720p", None))
+        self.combo_box_scale.setItemText(2, QCoreApplication.translate("MainWindow", u"1080p", None))
+
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
     # retranslateUi

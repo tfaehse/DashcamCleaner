@@ -3,12 +3,12 @@ import os
 import sys
 from glob import glob
 
-from PySide2.QtCore import QSettings, QThread, Signal
+from PySide2.QtCore import QSettings
 from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog
-from PySide2.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox
+from PySide2.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox, QComboBox
 
-from ui_mainwindow import Ui_MainWindow
 from src.blurrer import VideoBlurrer
+from ui_mainwindow import Ui_MainWindow
 
 
 class MainWindow(QMainWindow):
@@ -32,6 +32,7 @@ class MainWindow(QMainWindow):
         self.ui.combo_box_weights.currentIndexChanged.connect(self.setup_blurrer)
 
     def load_weights_options(self):
+        self.ui.combo_box_weights.clear()
         for net_path in glob(f"./weights/*.pt"):
             clean_name = os.path.splitext(os.path.basename(net_path))[0]
             self.ui.combo_box_weights.addItem(clean_name)
@@ -82,16 +83,18 @@ class MainWindow(QMainWindow):
         self.ui.button_abort.setEnabled(True)
         self.ui.button_start.setEnabled(False)
 
+        # read inference size
+        inference_size = int(self.ui.combo_box_scale.currentText()[:-1]) * 16 / 9 # ouch again
+
         # set up parameters
         parameters = {
             "input_path": self.ui.line_source.text(),
             "output_path": self.ui.line_target.text(),
-            "weights_path": "weights/yolov5s_weights.pt",
             "blur_size": self.ui.spin_blur.value(),
             "blur_memory": self.ui.spin_memory.value(),
             "threshold": self.ui.double_spin_threshold.value(),
             "roi_multi": self.ui.double_spin_roimulti.value(),
-            "inference_scale": self.ui.double_spin_size.value()
+            "inference_size": inference_size
         }
         if self.blurrer:
             self.blurrer.parameters = parameters
@@ -151,6 +154,18 @@ class MainWindow(QMainWindow):
                 if value and value == "true":  # ouch...
                     obj.setChecked(True)
 
+            if isinstance(obj, QComboBox):
+                name = obj.objectName()
+                value = self.settings.value(name)
+                if value:
+                    index = obj.findText(value)
+                    if index == -1:
+                        obj.insertItems(0, [value])
+                        index = obj.findText(value)
+                        obj.setCurrentIndex(index)
+                    else:
+                        obj.setCurrentIndex(index)
+
     def blurrer_finished(self):
         """
         Create a new blurrer, setup UI and notify the user
@@ -187,6 +202,11 @@ class MainWindow(QMainWindow):
             if isinstance(obj, QRadioButton):
                 name = obj.objectName()
                 value = obj.isChecked()
+                self.settings.setValue(name, value)
+
+            if isinstance(obj, QComboBox):
+                index = obj.currentIndex()  # get current index from combobox
+                value = obj.itemText(index)
                 self.settings.setValue(name, value)
 
     def closeEvent(self, event):
