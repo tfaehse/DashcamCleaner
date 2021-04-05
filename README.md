@@ -60,7 +60,7 @@ To get a local copy up and running follow these simple steps.
 
 You need a working Python environment with a Python version of 3.8 or higher that satisfies the listed `requirements.txt`. Depending on your machine, you can leverage GPU acceleration for pytorch - see [here](https://pytorch.org/get-started/locally/) or just use `requirements-gpu.txt`.
 
-Further, h264 was chosen for the output video file. You can download an open source library to add support [here](https://github.com/cisco/openh264/releases).
+Further, h264 was chosen for the output video file. You can download an open source library to add support [here](https://github.com/cisco/openh264/releases). OpenCV expects version 1.8.0
 
 ### Installation
 
@@ -71,9 +71,11 @@ Further, h264 was chosen for the output video file. You can download an open sou
 2. Set up Python environment and install requisites
    ```sh
    conda create -n py38 python=3.8
-   conda activate py36
+   conda activate py38
    pip install -r requirements.txt
    ```
+
+3. Place `openh264-1.8.0-win64.dll` in the same folder as `main.py`.
 
 <!-- USAGE EXAMPLES -->
 ## Usage
