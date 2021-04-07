@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>534</width>
-    <height>161</height>
+    <height>188</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -84,7 +84,11 @@
        </widget>
       </item>
       <item>
-       <widget class="QSpinBox" name="spin_blur"/>
+       <widget class="QSpinBox" name="spin_blur">
+        <property name="value">
+         <number>9</number>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="label_5">
@@ -153,12 +157,15 @@
       <item>
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>Inference scale</string>
+         <string>Inference size</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QComboBox" name="combo_box_scale">
+        <property name="currentText">
+         <string>720p</string>
+        </property>
         <item>
          <property name="text">
           <string>360p</string>

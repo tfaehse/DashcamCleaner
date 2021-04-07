@@ -8,7 +8,7 @@ from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide2.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox, QComboBox
 
 from src.blurrer import VideoBlurrer
-from ui_mainwindow import Ui_MainWindow
+from src.ui_mainwindow import Ui_MainWindow
 
 
 class MainWindow(QMainWindow):

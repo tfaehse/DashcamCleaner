@@ -129,8 +129,8 @@ def setup_detector(weights_path: str):
     model = torch.hub.load('ultralytics/yolov5', 'custom', weights_path)
     if torch.cuda.is_available():
         print(f"Using {torch.cuda.get_device_name(torch.cuda.current_device())}.")
-        torch.backends.cudnn.benchmark = True
         model.cuda()
+        torch.backends.cudnn.benchmark = True
     else:
         print("Using CPU.")
     return model

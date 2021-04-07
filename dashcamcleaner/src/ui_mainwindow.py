@@ -17,7 +17,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(534, 161)
+        MainWindow.resize(534, 188)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -82,6 +82,7 @@ class Ui_MainWindow(object):
 
         self.spin_blur = QSpinBox(self.centralwidget)
         self.spin_blur.setObjectName(u"spin_blur")
+        self.spin_blur.setValue(9)
 
         self.horizontalLayout_3.addWidget(self.spin_blur)
 
@@ -200,11 +201,12 @@ class Ui_MainWindow(object):
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Detection threshold:", None))
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"ROI enlargement", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Weights", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Inference scale", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Inference size", None))
         self.combo_box_scale.setItemText(0, QCoreApplication.translate("MainWindow", u"360p", None))
         self.combo_box_scale.setItemText(1, QCoreApplication.translate("MainWindow", u"720p", None))
         self.combo_box_scale.setItemText(2, QCoreApplication.translate("MainWindow", u"1080p", None))
 
+        self.combo_box_scale.setCurrentText(QCoreApplication.translate("MainWindow", u"720p", None))
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
     # retranslateUi
