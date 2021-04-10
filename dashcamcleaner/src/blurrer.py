@@ -4,6 +4,7 @@ import os
 import numpy as np
 import cv2
 from src.box import Box
+from timeit import default_timer as timer
 from math import ceil
 
 class VideoBlurrer(QThread):
@@ -21,6 +22,7 @@ class VideoBlurrer(QThread):
         self.detections = []
         weights_path = os.path.join("weights", f"{weights_name}.pt")
         self.detector = setup_detector(weights_path)
+        self.result = {"success": False, "elapsed_time": 0}
         print("Worker created")
 
     def apply_blur(self, frame: np.array, new_detections: list):
@@ -71,6 +73,10 @@ class VideoBlurrer(QThread):
         Write a copy of the input video stripped of identifiable information, i.e. faces and license plates
         """
 
+        # reset success and start timer
+        self.result["success"] = False
+        start = timer()
+
         # gather inputs from self.parameters
         print("Worker started")
         input_path = self.parameters["input_path"]
@@ -119,6 +125,10 @@ class VideoBlurrer(QThread):
         self.detections = []
         cap.release()
         writer.release()
+
+        ## store sucess and elapsed time
+        self.result["success"] = True
+        self.result["elapsed_time"] = timer() - start
 
 def setup_detector(weights_path: str):
     """

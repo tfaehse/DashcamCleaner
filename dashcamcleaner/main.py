@@ -171,7 +171,12 @@ class MainWindow(QMainWindow):
         Create a new blurrer, setup UI and notify the user
         """
         msg_box = QMessageBox()
-        msg_box.setText("Blurrer terminated.")
+        if self.blurrer and self.blurrer.result["success"]:
+            minutes = int(self.blurrer.result["elapsed_time"] // 60)
+            seconds = round(self.blurrer.result["elapsed_time"] % 60)
+            msg_box.setText(f"Video blurred successfully in {minutes} minutes and {seconds} seconds.")
+        else:
+            msg_box.setText("Blurring resulted in errors.")
         msg_box.exec_()
         if not self.blurrer:
             self.setup_blurrer()
