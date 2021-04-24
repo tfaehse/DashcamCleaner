@@ -1,11 +1,13 @@
-from PySide2.QtCore import QSettings, QThread, Signal
-import torch
 import os
-import numpy as np
-import cv2
-from src.box import Box
+import subprocess
 from timeit import default_timer as timer
-from math import ceil
+
+import cv2
+import numpy as np
+import torch
+from PySide2.QtCore import QThread, Signal
+from src.box import Box
+
 
 class VideoBlurrer(QThread):
     setMaximum = Signal(int)
@@ -80,6 +82,7 @@ class VideoBlurrer(QThread):
         # gather inputs from self.parameters
         print("Worker started")
         input_path = self.parameters["input_path"]
+        temp_output = f"{os.path.splitext(self.parameters['output_path'])[0]}_copy{os.path.splitext(self.parameters['output_path'])[1]}"
         output_path = self.parameters["output_path"]
         threshold = self.parameters["threshold"]
 
@@ -97,7 +100,7 @@ class VideoBlurrer(QThread):
 
         # save the video to a file
         fourcc = cv2.VideoWriter_fourcc(*'H264')
-        writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        writer = cv2.VideoWriter(temp_output, fourcc, fps, (width, height))
 
         # update GUI's progress bar on its maximum frames
         self.setMaximum.emit(length)
@@ -126,9 +129,19 @@ class VideoBlurrer(QThread):
         cap.release()
         writer.release()
 
+        # copy over audio stream from original video to edited video
+        ffmpeg_exe = os.getenv("FFMPEG_BINARY")
+        subprocess.run(
+            [ffmpeg_exe, "-y", "-i", temp_output, "-i", input_path, "-c", "copy", "-map", "0:0", "-map", "1:1",
+             "-shortest", output_path])
+
+        # delete temporary output that had no audio track
+        os.remove(temp_output)
+
         ## store sucess and elapsed time
         self.result["success"] = True
         self.result["elapsed_time"] = timer() - start
+
 
 def setup_detector(weights_path: str):
     """
