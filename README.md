@@ -59,6 +59,8 @@ You need a working Python environment with a Python version of 3.8 or higher tha
 
 Further, h264 was chosen for the output video file. You can download an open source library to add support [here](https://github.com/cisco/openh264/releases). OpenCV currently expects version 1.8.0.
 
+Since OpenCV does not care about audio channels, ffmpeg is used to combine the edited video and the audio channel of the input video. The environment variable `FFMPEG_BINARY` needs to be set to the ffmpeg executable for this to work.
+
 ### Installation example on Windows using Conda
 
 1. Clone the repo
