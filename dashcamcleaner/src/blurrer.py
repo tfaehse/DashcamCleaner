@@ -46,16 +46,41 @@ class VideoBlurrer(QThread):
             scaled_detection = detection.scale(frame.shape, roi_multi)
             self.detections.append([scaled_detection, 0])
 
+        # prepare copy and mask
+        temp = frame.copy()
+        mask = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
+
         for detection in [x[0] for x in self.detections]:
             # two-fold blurring: softer blur on the edge of the box to look smoother and less abrupt
             outer_box = detection
             inner_box = detection.scale(frame.shape, 0.8)
-            frame[outer_box.coords_as_slices()] = cv2.blur(
-                frame[outer_box.coords_as_slices()], (blur_size, blur_size))
-            frame[inner_box.coords_as_slices()] = cv2.blur(
-                frame[inner_box.coords_as_slices()],
-                (blur_size * 2 + 1, blur_size * 2 + 1))
-        return frame
+
+            if detection.kind == "plate":
+                # blur in-place on frame
+                frame[outer_box.coords_as_slices()] = cv2.blur(
+                    frame[outer_box.coords_as_slices()], (blur_size, blur_size))
+                frame[inner_box.coords_as_slices()] = cv2.blur(
+                    frame[inner_box.coords_as_slices()],
+                    (blur_size * 2 + 1, blur_size * 2 + 1))
+                cv2.rectangle
+
+
+            elif detection.kind == "face":
+                center, axes = detection.ellipse_coordinates()
+                # blur rectangle around face
+                temp[outer_box.coords_as_slices()] = cv2.blur(
+                    temp[outer_box.coords_as_slices()], (blur_size * 2 + 1, blur_size * 2 + 1))
+                # add ellipse to mask
+                cv2.ellipse(mask, center, axes, 0, 0, 360, (255, 255, 255), -1)
+
+            else:
+                raise ValueError(f"Detection kind not supported: {detection.kind}")
+
+        # apply mask to blur faces too
+        mask_inverted = cv2.bitwise_not(mask)
+        background = cv2.bitwise_and(frame, frame, mask=mask_inverted)
+        blurred = cv2.bitwise_and(temp, temp, mask=mask)
+        return cv2.add(background, blurred)
 
     def detect_identifiable_information(self, image: np.array):
         """
@@ -67,7 +92,8 @@ class VideoBlurrer(QThread):
         results = self.detector(image, size=scale)
         boxes = []
         for res in results.xyxy[0]:
-            boxes.append(Box(res[0].item(), res[1].item(), res[2].item(), res[3].item(), res[4].item(), res[5].item()))
+            detection_kind = "plate" if res[5].item() == 0 else "face"
+            boxes.append(Box(res[0].item(), res[1].item(), res[2].item(), res[3].item(), res[4].item(), detection_kind))
         return boxes
 
     def run(self):

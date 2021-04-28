@@ -1,4 +1,5 @@
-from math import sqrt, floor, ceil
+from math import sqrt, floor
+
 
 class Box:
     def __init__(self, x_min, y_min, x_max, y_max, score, kind):
@@ -15,6 +16,15 @@ class Box:
         :return: Slices of box coordinates
         """
         return slice(int(self.y_min), int(self.y_max)), slice(int(self.x_min), int(self.x_max))
+
+    def ellipse_coordinates(self):
+        """
+        Calculate elliptic coordinates for the box
+        :return: position + radii
+        """
+        center_pos = (int((self.x_max + self.x_min) / 2), int((self.y_max + self.y_min) / 2))
+        axis_length = (int((self.x_max - self.x_min) / 2), int((self.y_max - self.y_min) / 2))
+        return center_pos, axis_length
 
     def scale(self, shape, multiplier):
         """
