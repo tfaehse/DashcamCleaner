@@ -47,8 +47,18 @@ class MainWindow(QMainWindow):
         self.blurrer.setMaximum.connect(self.setMaximumValue)
         self.blurrer.updateProgress.connect(self.setProgress)
         self.blurrer.finished.connect(self.blurrer_finished)
+        self.blurrer.alert.connect(self.blurrer_alert)
         msg_box = QMessageBox()
         msg_box.setText(f"Successfully loaded {weights_name}.pt")
+        msg_box.exec_()
+
+    def blurrer_alert(self, message: str):
+        """
+        Display blurrer messages in the GUI
+        :param message: Message to be displayed
+        """
+        msg_box = QMessageBox()
+        msg_box.setText(message)
         msg_box.exec_()
 
     def button_abort_clicked(self):
@@ -84,7 +94,7 @@ class MainWindow(QMainWindow):
         self.ui.button_start.setEnabled(False)
 
         # read inference size
-        inference_size = int(self.ui.combo_box_scale.currentText()[:-1]) * 16 / 9 # ouch again
+        inference_size = int(self.ui.combo_box_scale.currentText()[:-1]) * 16 / 9  # ouch again
 
         # set up parameters
         parameters = {
@@ -94,7 +104,8 @@ class MainWindow(QMainWindow):
             "blur_memory": self.ui.spin_memory.value(),
             "threshold": self.ui.double_spin_threshold.value(),
             "roi_multi": self.ui.double_spin_roimulti.value(),
-            "inference_size": inference_size
+            "inference_size": inference_size,
+            "quality": self.ui.spin_quality.value()
         }
         if self.blurrer:
             self.blurrer.parameters = parameters

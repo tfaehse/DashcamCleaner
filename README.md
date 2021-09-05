@@ -57,7 +57,6 @@ To get a local copy up and running follow these simple steps.
 
 You need a working Python environment with a Python version of 3.8 or higher that satisfies the listed `requirements.txt`. Depending on your machine, you can leverage GPU acceleration for pytorch - see [here](https://pytorch.org/get-started/locally/) or just use `requirements-gpu.txt`.
 
-Further, h264 was chosen for the output video file. You can download an open source library to add support [here](https://github.com/cisco/openh264/releases). OpenCV currently expects version 1.8.0.
 
 Since OpenCV does not care about audio channels, ffmpeg is used to combine the edited video and the audio channel of the input video. The environment variable `FFMPEG_BINARY` needs to be set to the ffmpeg executable for this to work.
 
@@ -73,9 +72,7 @@ Since OpenCV does not care about audio channels, ffmpeg is used to combine the e
    conda activate py38
    pip install -r requirements.txt
    ```
-
-3. Place `openh264-1.8.0-win64.dll` in the same folder as `main.py`.
-
+3. Install ffmpeg binaries (release essentials is enough) and create an environment variable "FFMPEG_BINARY" that points to the ffmpeg.exe binary.
 <!-- USAGE EXAMPLES -->
 ## Usage
 On first launch, the YOLOv5 model is automatically downloaded and fused with the custom weights for face and plate detection from this repo.
