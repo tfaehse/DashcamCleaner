@@ -9,7 +9,6 @@
 ################################################################################
 
 from PySide2.QtCore import *
-from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 
@@ -36,7 +35,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.button_source)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout)
 
         self.horizontalLayout_2 = QHBoxLayout()
@@ -52,7 +50,6 @@ class Ui_MainWindow(object):
         self.button_target.setObjectName(u"button_target")
 
         self.horizontalLayout_2.addWidget(self.button_target)
-
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
@@ -113,7 +110,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.double_spin_roimulti)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout_3)
 
         self.line_2 = QFrame(self.centralwidget)
@@ -148,10 +144,21 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.combo_box_scale)
 
+        self.label_7 = QLabel(self.centralwidget)
+        self.label_7.setObjectName(u"label_7")
+
+        self.horizontalLayout_4.addWidget(self.label_7)
+
+        self.spin_quality = QSpinBox(self.centralwidget)
+        self.spin_quality.setObjectName(u"spin_quality")
+        self.spin_quality.setMaximum(10)
+        self.spin_quality.setValue(5)
+
+        self.horizontalLayout_4.addWidget(self.spin_quality)
+
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_4.addItem(self.horizontalSpacer)
-
 
         self.verticalLayout.addLayout(self.horizontalLayout_4)
 
@@ -182,7 +189,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.button_abort)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout_5)
 
         MainWindow.setCentralWidget(self.centralwidget)
@@ -190,6 +196,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         QMetaObject.connectSlotsByName(MainWindow)
+
     # setupUi
 
     def retranslateUi(self, MainWindow):
@@ -206,8 +213,8 @@ class Ui_MainWindow(object):
         self.combo_box_scale.setItemText(1, QCoreApplication.translate("MainWindow", u"720p", None))
         self.combo_box_scale.setItemText(2, QCoreApplication.translate("MainWindow", u"1080p", None))
 
-        self.combo_box_scale.setCurrentText(QCoreApplication.translate("MainWindow", u"720p", None))
+        self.combo_box_scale.setCurrentText(QCoreApplication.translate("MainWindow", u"360p", None))
+        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Output Qiuality", None))
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
     # retranslateUi
-

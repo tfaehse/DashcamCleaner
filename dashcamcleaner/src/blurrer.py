@@ -3,6 +3,7 @@ import subprocess
 from timeit import default_timer as timer
 
 import cv2
+import imageio
 import numpy as np
 import torch
 from PySide2.QtCore import QThread, Signal
@@ -12,6 +13,7 @@ from src.box import Box
 class VideoBlurrer(QThread):
     setMaximum = Signal(int)
     updateProgress = Signal(int)
+    alert = Signal(str)
 
     def __init__(self, weights_name, parameters=None):
         """
@@ -111,6 +113,7 @@ class VideoBlurrer(QThread):
         temp_output = f"{os.path.splitext(self.parameters['output_path'])[0]}_copy{os.path.splitext(self.parameters['output_path'])[1]}"
         output_path = self.parameters["output_path"]
         threshold = self.parameters["threshold"]
+        quality = self.parameters["quality"]
 
         # customize detector
         self.detector.conf = threshold
@@ -125,14 +128,13 @@ class VideoBlurrer(QThread):
         fps = cap.get(cv2.CAP_PROP_FPS)
 
         # save the video to a file
-        fourcc = cv2.VideoWriter_fourcc(*'H264')
-        writer = cv2.VideoWriter(temp_output, fourcc, fps, (width, height))
+        writer = imageio.get_writer(temp_output, codec="libx264", fps=fps, quality=quality)
 
         # update GUI's progress bar on its maximum frames
         self.setMaximum.emit(length)
 
-        if cap.isOpened() == False:
-            print('error file not found')
+        if not cap.isOpened():
+            self.alert.emit('Error: Video file could not be found')
             return
 
         # loop through video
@@ -140,11 +142,11 @@ class VideoBlurrer(QThread):
         while cap.isOpened():
             ret, frame = cap.read()
 
-            if ret == True:
+            if ret:
                 new_detections = self.detect_identifiable_information(frame.copy())
                 frame = self.apply_blur(frame, new_detections)
-                writer.write(frame)
-
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                writer.append_data(frame_rgb)
             else:
                 break
 
@@ -153,18 +155,25 @@ class VideoBlurrer(QThread):
 
         self.detections = []
         cap.release()
-        writer.release()
+        writer.close()
 
         # copy over audio stream from original video to edited video
         ffmpeg_exe = os.getenv("FFMPEG_BINARY")
+        if not ffmpeg_exe:
+            self.alert.emit(
+                "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the envirnment variable 'FFMPEG_BINARY'.")
+            return
         subprocess.run(
             [ffmpeg_exe, "-y", "-i", temp_output, "-i", input_path, "-c", "copy", "-map", "0:0", "-map", "1:1",
              "-shortest", output_path])
 
         # delete temporary output that had no audio track
-        os.remove(temp_output)
+        try:
+            os.remove(temp_output)
+        except:
+            self.alert.emit("Could not delete temporary, muted video. Maybe another process (like a cloud service or antivirus) is using it already.")
 
-        ## store sucess and elapsed time
+        # store success and elapsed time
         self.result["success"] = True
         self.result["elapsed_time"] = timer() - start
 
