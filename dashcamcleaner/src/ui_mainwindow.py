@@ -214,7 +214,7 @@ class Ui_MainWindow(object):
         self.combo_box_scale.setItemText(2, QCoreApplication.translate("MainWindow", u"1080p", None))
 
         self.combo_box_scale.setCurrentText(QCoreApplication.translate("MainWindow", u"360p", None))
-        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Output Qiuality", None))
+        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Output Quality", None))
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
     # retranslateUi
