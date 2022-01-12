@@ -3,9 +3,9 @@ import os
 import sys
 from glob import glob
 
-from PySide2.QtCore import QSettings
-from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog
-from PySide2.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox, QComboBox
+from PySide6.QtCore import QSettings
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PySide6.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox, QComboBox
 
 from src.blurrer import VideoBlurrer
 from src.ui_mainwindow import Ui_MainWindow
@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
 
     def load_weights_options(self):
         self.ui.combo_box_weights.clear()
-        for net_path in glob(f"./weights/*.pt"):
+        for net_path in glob("./weights/*.pt"):
             clean_name = os.path.splitext(os.path.basename(net_path))[0]
             self.ui.combo_box_weights.addItem(clean_name)
         self.setup_blurrer()
