@@ -94,6 +94,28 @@ Sometimes, a license plate might be missed for just one frame. This one frame, u
 
 For reference: even at 1080p inference, i.e. an inference scale of 1, a 1080p30fps video from my 70mai 1S processes at around 10 frames per second, a 1 minute clip takes ~3 minutes to blur on a 5820K/GTX1060 machine.
 
+There's now also a fairly simple CLI to blur a video:
+
+```
+python dashcamcleaner/cli.py -h
+usage: cli.py [-h] input output weights inference_size threshold blur_size frame_memory roi_multi quality
+
+positional arguments:
+  input           input video file path
+  output          output video file path
+  weights         weights file name
+  inference_size  vertical inference size, e.g. 1080 or fHD
+  threshold       detection threshold
+  blur_size       granularitay of the blurring filter
+  frame_memory    blur objects in the last x frames too
+  roi_multi       increase/decrease area that will be blurred - 1 means no change
+  quality         quality of the resulting video
+
+optional arguments:
+  -h, --help      show this help message and exit
+```
+For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.
+
 <!-- WEIGHTS -->
 ## Weights
 
