@@ -12,9 +12,6 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 class CLI():
 
     def __init__(self, opt):
-        """
-        Constructor
-        """
         self.opt = opt
         self.blurrer = None
 

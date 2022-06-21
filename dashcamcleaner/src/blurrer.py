@@ -25,7 +25,7 @@ class VideoBlurrer(QThread):
         super(VideoBlurrer, self).__init__()
         self.parameters = parameters
         self.detections = []
-        weights_path = os.path.join("weights", f"{weights_name}.pt")
+        weights_path = os.path.join("weights", f"{weights_name}.pt".replace(".pt.pt", ".pt"))
         self.detector = setup_detector(weights_path)
         self.result = {"success": False, "elapsed_time": 0}
         print("Worker created")
