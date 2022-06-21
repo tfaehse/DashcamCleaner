@@ -1,19 +1,19 @@
+
+--find-links https://download.pytorch.org/whl/torch_stable.html
+imageio>=2.9.0
+imageio-ffmpeg>=0.4.5
 matplotlib>=3.2.2
 numpy>=1.18.5
 opencv-python>=4.1.2
+pandas>=1.2.3
 Pillow
+pyside6>=6.2.2.1
 PyYAML>=5.3.1
+requests>=2.25.1
 scipy>=1.4.1
+seaborn>=0.11.1
+tensorboard>=2.4.1
 torch==1.8.1+cu111
 torchaudio==0.8.1
 torchvision>=0.8.1
-imageio>=2.9.0
-imageio-ffmpeg>=0.4.5
 tqdm>=4.41.0
-pyside6>=6.2.2.1
-requests>=2.25.1
-pandas>=1.2.3
-seaborn>=0.11.1
-tensorboard>=2.4.1
-
---find-links https://download.pytorch.org/whl/torch_stable.html

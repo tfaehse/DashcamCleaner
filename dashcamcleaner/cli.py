@@ -1,11 +1,9 @@
-import inspect
-import os
-import sys
-from glob import glob
+#!/usr/bin/env python3
+
 from argparse import ArgumentParser
-from tqdm import tqdm
 
 from src.blurrer import VideoBlurrer
+
 
 class CLI():
 
@@ -48,6 +46,7 @@ class CLI():
         else:
             print("Blurring resulted in errors.")
 
+
 def parse_arguments():
     parser = ArgumentParser()
     parser.add_argument("input", help="input video file path", type=str)
@@ -55,11 +54,12 @@ def parse_arguments():
     parser.add_argument("weights", help="weights file name", type=str)
     parser.add_argument("inference_size", help="vertical inference size, e.g. 1080 or fHD", type=int)
     parser.add_argument("threshold", help="detection threshold", type=float)
-    parser.add_argument("blur_size", help="granularitay of the blurring filter", type=int)
+    parser.add_argument("blur_size", help="granularity of the blurring filter", type=int)
     parser.add_argument("frame_memory", help="blur objects in the last x frames too", type=int)
     parser.add_argument("roi_multi", help="increase/decrease area that will be blurred - 1 means no change", type=float)
     parser.add_argument("quality", help="quality of the resulting video", type=int)
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     opt = parse_arguments()

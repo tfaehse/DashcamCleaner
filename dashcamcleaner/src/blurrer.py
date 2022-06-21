@@ -1,5 +1,6 @@
 import os
 import subprocess
+from shutil import which
 from timeit import default_timer as timer
 
 import cv2
@@ -8,7 +9,6 @@ import numpy as np
 import torch
 from PySide6.QtCore import QThread, Signal
 from src.box import Box
-from shutil import which
 
 
 class VideoBlurrer(QThread):
@@ -134,8 +134,8 @@ class VideoBlurrer(QThread):
         cap = cv2.VideoCapture(input_path)
 
         # get the height and width of each frame
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        #  TODO: use or remove variable # width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        #  TODO: use or remove variable # height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
 
@@ -201,9 +201,9 @@ class VideoBlurrer(QThread):
         # delete temporary output that had no audio track
         try:
             os.remove(temp_output)
-        except:
+        except Exception as e:
             self.alert.emit(
-                "Could not delete temporary, muted video. Maybe another process (like a cloud service or antivirus) is using it already."
+                f"Could not delete temporary, muted video. Maybe another process (like a cloud service or antivirus) is using it already. \n{str(e)}"
             )
 
         # store success and elapsed time

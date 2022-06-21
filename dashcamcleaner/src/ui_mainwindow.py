@@ -8,17 +8,10 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-    QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QDoubleSpinBox, QFrame,
-    QHBoxLayout, QLabel, QLineEdit, QMainWindow,
-    QProgressBar, QPushButton, QSizePolicy, QSpacerItem,
-    QSpinBox, QVBoxLayout, QWidget)
+from PySide6.QtCore import QCoreApplication, QDate, QDateTime, QLocale, QMetaObject, QObject, QPoint, QRect, QSize, Qt, QTime, QUrl  # NOQA
+from PySide6.QtGui import QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QGradient, QIcon, QImage, QKeySequence, QLinearGradient, QPainter, QPalette, QPixmap, QRadialGradient, QTransform  # NOQA
+from PySide6.QtWidgets import QApplication, QComboBox, QDoubleSpinBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QProgressBar, QPushButton, QSizePolicy, QSpacerItem, QSpinBox, QVBoxLayout, QWidget  # NOQA
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -43,7 +36,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.button_source)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout)
 
         self.horizontalLayout_2 = QHBoxLayout()
@@ -59,7 +51,6 @@ class Ui_MainWindow(object):
         self.button_target.setObjectName(u"button_target")
 
         self.horizontalLayout_2.addWidget(self.button_target)
-
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
@@ -120,7 +111,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.double_spin_roimulti)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout_3)
 
         self.line_2 = QFrame(self.centralwidget)
@@ -171,7 +161,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addItem(self.horizontalSpacer)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout_4)
 
         self.line_3 = QFrame(self.centralwidget)
@@ -201,7 +190,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.button_abort)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout_5)
 
         MainWindow.setCentralWidget(self.centralwidget)
@@ -230,4 +218,3 @@ class Ui_MainWindow(object):
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
     # retranslateUi
-

@@ -4,9 +4,7 @@ import sys
 from glob import glob
 
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
-from PySide6.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox, QComboBox
-
+from PySide6.QtWidgets import QApplication, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit, QMainWindow, QMessageBox, QRadioButton, QSpinBox  # NOQA
 from src.blurrer import VideoBlurrer
 from src.ui_mainwindow import Ui_MainWindow
 
