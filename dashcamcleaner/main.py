@@ -1,5 +1,7 @@
+#!/usr/bin/env python3
 import inspect
 import os
+import signal
 import sys
 from glob import glob
 
@@ -10,6 +12,9 @@ from PySide6.QtWidgets import (
 )
 from src.blurrer import VideoBlurrer
 from src.ui_mainwindow import Ui_MainWindow
+
+# makes it possible to interrupt while running in other thread
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):
