@@ -1,14 +1,20 @@
+#!/usr/bin/env python3
 import inspect
 import os
+import signal
 import sys
 from glob import glob
 
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
-from PySide6.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QRadioButton, QMessageBox, QComboBox
-
+from PySide6.QtWidgets import (
+    QApplication, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit,
+    QMainWindow, QMessageBox, QRadioButton, QSpinBox
+)
 from src.blurrer import VideoBlurrer
 from src.ui_mainwindow import Ui_MainWindow
+
+# makes it possible to interrupt while running in other thread
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):

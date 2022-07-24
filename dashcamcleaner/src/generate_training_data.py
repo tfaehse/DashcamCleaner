@@ -1,21 +1,21 @@
 import os
+import random
 import sys
+from argparse import ArgumentParser
+from glob import glob
+from math import floor, sqrt
 
 import cv2
-
-# hack to add Anonymizer submodule to PYTHONPATH
-sys.path.append(os.path.join(os.path.dirname(__file__), "anonymizer"))
+import pandas as pd
 from anonymizer.anonymization.anonymizer import Anonymizer
 from anonymizer.detection.detector import Detector
 from anonymizer.detection.weights import download_weights, get_weights_path
-from argparse import ArgumentParser
 from anonymizer.obfuscation.obfuscator import Obfuscator
-from math import sqrt, floor
-from glob import glob
-from tqdm import tqdm
-import pandas as pd
 from pascal_voc_writer import Writer
-import random
+from tqdm import tqdm
+
+# hack to add Anonymizer submodule to PYTHONPATH
+sys.path.append(os.path.join(os.path.dirname(__file__), "anonymizer"))
 
 
 def setup_anonymizer(weights_path: str, obfuscation_parameters: str):
@@ -95,7 +95,6 @@ class TrainingDataGenerator:
         for index, vid in enumerate(tqdm(randomized_videos[train_videos:], desc="Processing validation video file")):
             self.labeled_data_from_video(vid, index, label_format, "val")
 
-
     def labeled_data_from_video(self, video_path: str, vid_num: int, label_format, folder_suffix, roi_multi=1.2):
         """
         Extract frames and labels from a video
@@ -119,7 +118,7 @@ class TrainingDataGenerator:
             "plate": 0.2
         }
 
-        if cap.isOpened() == False:
+        if cap.isOpened() is False:
             print('error file not found')
             return
 
@@ -128,7 +127,7 @@ class TrainingDataGenerator:
         while cap.isOpened():
             # returns each frame
             ret, frame = cap.read()
-            if ret == True:
+            if ret is True:
                 # skip frames to avoid too similar frames
                 if counter % (self.skip_frames) == 0:
                     _, new_detections = self.anonymizer.anonymize_image(frame, detection_thresholds)
