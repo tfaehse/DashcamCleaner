@@ -7,18 +7,21 @@ from glob import glob
 
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit,
-    QMainWindow, QMessageBox, QRadioButton, QSpinBox
+    QApplication,
+    QComboBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QRadioButton,
+    QSpinBox,
 )
 from src.blurrer import VideoBlurrer
 from src.ui_mainwindow import Ui_MainWindow
 
-# makes it possible to interrupt while running in other thread
-signal.signal(signal.SIGINT, signal.SIG_DFL)
-
 
 class MainWindow(QMainWindow):
-
     def __init__(self):
         """
         Constructor
@@ -56,7 +59,7 @@ class MainWindow(QMainWindow):
         self.blurrer.alert.connect(self.blurrer_alert)
         msg_box = QMessageBox()
         msg_box.setText(f"Successfully loaded {weights_name}.pt")
-        msg_box.exec_()
+        msg_box.exec()
 
     def blurrer_alert(self, message: str):
         """
@@ -65,7 +68,7 @@ class MainWindow(QMainWindow):
         """
         msg_box = QMessageBox()
         msg_box.setText(message)
-        msg_box.exec_()
+        msg_box.exec()
 
     def button_abort_clicked(self):
         """
@@ -111,7 +114,8 @@ class MainWindow(QMainWindow):
             "threshold": self.ui.double_spin_threshold.value(),
             "roi_multi": self.ui.double_spin_roimulti.value(),
             "inference_size": inference_size,
-            "quality": self.ui.spin_quality.value()
+            "quality": self.ui.spin_quality.value(),
+            "batch_size": self.ui.spin_batch.value(),
         }
         if self.blurrer:
             self.blurrer.parameters = parameters
@@ -124,7 +128,9 @@ class MainWindow(QMainWindow):
         """
         Callback for button_source
         """
-        source_path, _ = QFileDialog.getOpenFileName(self, "Open Video", "", "Video Files (*.mkv *.avi *.mov *.mp4)")
+        source_path, _ = QFileDialog.getOpenFileName(
+            self, "Open Video", "", "Video Files (*.mkv *.avi *.mov *.mp4)"
+        )
         self.ui.line_source.setText(source_path)
 
     def button_target_clicked(self):
@@ -191,10 +197,12 @@ class MainWindow(QMainWindow):
         if self.blurrer and self.blurrer.result["success"]:
             minutes = int(self.blurrer.result["elapsed_time"] // 60)
             seconds = round(self.blurrer.result["elapsed_time"] % 60)
-            msg_box.setText(f"Video blurred successfully in {minutes} minutes and {seconds} seconds.")
+            msg_box.setText(
+                f"Video blurred successfully in {minutes} minutes and {seconds} seconds."
+            )
         else:
             msg_box.setText("Blurring resulted in errors.")
-        msg_box.exec_()
+        msg_box.exec()
         if not self.blurrer:
             self.setup_blurrer()
         self.ui.button_start.setEnabled(True)

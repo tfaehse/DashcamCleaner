@@ -43,16 +43,27 @@ class Box:
         x_max = self.x_max + ((sqrt(multiplier) - 1) * width) / 2
         y_min = self.y_min - ((sqrt(multiplier) - 1) * height) / 2
         y_max = self.y_max + ((sqrt(multiplier) - 1) * height) / 2
-        scaled_detection = Box(max(floor(x_min), 0), max(floor(y_min), 0), min(floor(x_max), frame_width),
-                               min(floor(y_max), frame_height), self.score, self.kind)
+        scaled_detection = Box(
+            max(floor(x_min), 0),
+            max(floor(y_min), 0),
+            min(floor(x_max), frame_width),
+            min(floor(y_max), frame_height),
+            self.score,
+            self.kind,
+        )
         return scaled_detection
 
     def __repr__(self):
-        return f'Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}, {self.score}, {self.kind})'
+        return f"Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}, {self.score}, {self.kind})"
 
     def __eq__(self, other):
         if isinstance(other, Box):
-            return (self.x_min == other.x_min and self.y_min == other.y_min and
-                    self.x_max == other.x_max and self.y_max == other.y_max and
-                    self.score == other.score and self.kind == other.kind)
+            return (
+                self.x_min == other.x_min
+                and self.y_min == other.y_min
+                and self.x_max == other.x_max
+                and self.y_max == other.y_max
+                and self.score == other.score
+                and self.kind == other.kind
+            )
         return False
