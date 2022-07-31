@@ -32,20 +32,14 @@ class CLI:
             "inference_size": inference_size,
             "quality": self.opt.quality,
             "batch_size": self.opt.batch_size,
+            "no_faces": self.opt.no_faces
         }
         if self.blurrer:
             self.blurrer.parameters = parameters
-            self.blurrer.start()
+            self.blurrer.blur_video()
         else:
             print("No blurrer object!")
-        print("Blurrer started!")
-        self.blurrer.wait()
-        if self.blurrer and self.blurrer.result["success"]:
-            minutes = int(self.blurrer.result["elapsed_time"] // 60)
-            seconds = round(self.blurrer.result["elapsed_time"] % 60)
-            print(f"Video blurred successfully in {minutes} minutes and {seconds} seconds.")
-        else:
-            print("Blurring resulted in errors.")
+        print("Video blurred successfully.")
 
 
 def parse_arguments():
@@ -105,6 +99,7 @@ def parse_arguments():
         choices=range(1, 11),
         default=10,
     )
+    parser.add_argument("-nf", "--no_faces", action="store_true", required=False, help="do not censor faces", default=False)
     return parser.parse_args()
 
 

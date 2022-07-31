@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import inspect
 import os
-import signal
 import sys
 from glob import glob
 
@@ -17,8 +16,8 @@ from PySide6.QtWidgets import (
     QRadioButton,
     QSpinBox,
 )
-from src.blurrer import VideoBlurrer
 from src.ui_mainwindow import Ui_MainWindow
+from src.qt_wrapper import qtVideoBlurWrapper
 
 
 class MainWindow(QMainWindow):
@@ -28,7 +27,7 @@ class MainWindow(QMainWindow):
         """
         self.receive_attempts = 0
         self.settings = QSettings("gui.ini", QSettings.IniFormat)
-        self.blurrer = None
+        self.blur_wrapper = None
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -52,16 +51,16 @@ class MainWindow(QMainWindow):
         Create and connect a blurrer thread
         """
         weights_name = self.ui.combo_box_weights.currentText()
-        self.blurrer = VideoBlurrer(weights_name)
-        self.blurrer.setMaximum.connect(self.setMaximumValue)
-        self.blurrer.updateProgress.connect(self.setProgress)
-        self.blurrer.finished.connect(self.blurrer_finished)
-        self.blurrer.alert.connect(self.blurrer_alert)
+        self.blur_wrapper = qtVideoBlurWrapper(weights_name)
+        self.blur_wrapper.setMaximum.connect(self.setMaximumValue)
+        self.blur_wrapper.updateProgress.connect(self.setProgress)
+        self.blur_wrapper.finished.connect(self.blur_wrapper_finished)
+        self.blur_wrapper.alert.connect(self.blur_wrapper_alert)
         msg_box = QMessageBox()
         msg_box.setText(f"Successfully loaded {weights_name}.pt")
         msg_box.exec()
 
-    def blurrer_alert(self, message: str):
+    def blur_wrapper_alert(self, message: str):
         """
         Display blurrer messages in the GUI
         :param message: Message to be displayed
@@ -116,10 +115,11 @@ class MainWindow(QMainWindow):
             "inference_size": inference_size,
             "quality": self.ui.spin_quality.value(),
             "batch_size": self.ui.spin_batch.value(),
+            "no_faces": False
         }
-        if self.blurrer:
-            self.blurrer.parameters = parameters
-            self.blurrer.start()
+        if self.blur_wrapper:
+            self.blur_wrapper.blurrer.parameters = parameters
+            self.blur_wrapper.start()
         else:
             print("No blurrer object!")
         print("Blurrer started!")
@@ -144,9 +144,9 @@ class MainWindow(QMainWindow):
         """
         Force blurrer thread to quit
         """
-        if self.blurrer.isRunning():
-            self.blurrer.terminate()
-            self.blurrer.wait()
+        if self.blur_wrapper.isRunning():
+            self.blur_wrapper.terminate()
+            self.blur_wrapper.wait()
 
     def restore(self):
         """
@@ -189,21 +189,21 @@ class MainWindow(QMainWindow):
                     else:
                         obj.setCurrentIndex(index)
 
-    def blurrer_finished(self):
+    def blur_wrapper_finished(self):
         """
         Create a new blurrer, setup UI and notify the user
         """
         msg_box = QMessageBox()
-        if self.blurrer and self.blurrer.result["success"]:
-            minutes = int(self.blurrer.result["elapsed_time"] // 60)
-            seconds = round(self.blurrer.result["elapsed_time"] % 60)
+        if self.blur_wrapper and self.blur_wrapper.result["success"]:
+            minutes = int(self.blur_wrapper.result["elapsed_time"] // 60)
+            seconds = round(self.blur_wrapper.result["elapsed_time"] % 60)
             msg_box.setText(
                 f"Video blurred successfully in {minutes} minutes and {seconds} seconds."
             )
         else:
             msg_box.setText("Blurring resulted in errors.")
         msg_box.exec()
-        if not self.blurrer:
+        if not self.blur_wrapper:
             self.setup_blurrer()
         self.ui.button_start.setEnabled(True)
         self.ui.button_abort.setEnabled(False)
@@ -256,4 +256,4 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

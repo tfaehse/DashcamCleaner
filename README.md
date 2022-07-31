@@ -84,7 +84,7 @@ The UI is fairly self-explanatory: To use the tool, you need to:
 - choose an output location
 - hit start!
 
-The options adjust parameters of the detection algorithm and post processing options laid out in [the roadmap](Roadmap). The detection threshold and inference size are direct parameters of the YOLOv5 detector, they provide the main controls for detection quality and speed that can be tweaked. In short:
+The options adjust parameters of the detection algorithm and post-processing options laid out in [the roadmap](Roadmap). The detection threshold and inference size are direct parameters of the YOLOv5 detector, they provide the main controls for detection quality and speed that can be tweaked. In short:
 - Each recognized object, i.e. a face or a license plate, possesses a confidence value that describes how likely it is to actually be a license plate or a face. Increasing the threshold results in fewer false positives, at the cost of potential false negatives
 - The performance of the detector depends on the input size of the image, so the resolution of the video. The inference size option allows downscaling the input for detections only. The result is faster detection with reduced precision. _NOTE:_ The output video still uses the full resolution from the input video, there is no loss in quality! Only detection runs at a lower resolution.
 
@@ -98,20 +98,24 @@ There's now also a fairly simple CLI to blur a video:
 
 ```
 python dashcamcleaner/cli.py -h
-usage: cli.py [-h] input output weights inference_size threshold blur_size frame_memory roi_multi quality
+usage: cli.py [-h] -i INPUT_PATH -o OUTPUT_NAME -w WEIGHTS_FILE_NAME --threshold THRESHOLD --blur_size BLUR_SIZE --frame_memory FRAME_MEMORY [--batch_size BATCH_SIZE] [--inference_size INFERENCE_SIZE]
+              [--roi_multi ROI_MULTI] [-q [1, 10]] [-nf]
 
-positional arguments:
+required arguments:
   input           input video file path
   output          output video file path
   weights         weights file name
-  inference_size  vertical inference size, e.g. 1080 or fHD
   threshold       detection threshold
   blur_size       granularitay of the blurring filter
   frame_memory    blur objects in the last x frames too
-  roi_multi       increase/decrease area that will be blurred - 1 means no change
-  quality         quality of the resulting video
 
 optional arguments:
+  inference_size  vertical inference size, e.g. 1080 or fHD
+  roi_multi       increase/decrease area that will be blurred - 1 means no change
+  batch_size      number of frames detection is run on at once
+  quality         quality of the resulting video
+  no_facea        don't blur out faces
+
   -h, --help      show this help message and exit
 ```
 For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.

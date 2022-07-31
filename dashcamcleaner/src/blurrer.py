@@ -1,33 +1,26 @@
 import os
 import subprocess
 from shutil import which
-from timeit import default_timer as timer
+from tqdm import tqdm
 
 import cv2
 import imageio
 import numpy as np
 import torch
-from PySide6.QtCore import QThread, Signal
 from src.box import Box
 
 
-class VideoBlurrer(QThread):
-    setMaximum = Signal(int)
-    updateProgress = Signal(int)
-    alert = Signal(str)
-
+class VideoBlurrer:
     def __init__(self, weights_name, parameters=None):
         """
         Constructor
         :param weights_name: file name of the weights to be used
         :param parameters: all relevant paremeters for the blurring process
         """
-        super(VideoBlurrer, self).__init__()
         self.parameters = parameters
         self.detections = []
         weights_path = os.path.join("weights", f"{weights_name}.pt".replace(".pt.pt", ".pt"))
         self.detector = setup_detector(weights_path)
-        self.result = {"success": False, "elapsed_time": 0}
         print("Worker created")
 
     def apply_blur(self, frame: np.array, new_detections: list):
@@ -41,12 +34,15 @@ class VideoBlurrer(QThread):
         blur_size = self.parameters["blur_size"]
         blur_memory = self.parameters["blur_memory"]
         roi_multi = self.parameters["roi_multi"]
+        no_faces = self.parameters["no_faces"]
 
         # gather and process all currently relevant detections
         self.detections = [
             [x[0], x[1] + 1] for x in self.detections if x[1] <= blur_memory
         ]  # throw out outdated detections, increase age by 1
         for detection in new_detections:
+            if no_faces and detection.kind == "face":
+                continue
             scaled_detection = detection.scale(frame.shape, roi_multi)
             self.detections.append([scaled_detection, 0])
 
@@ -67,7 +63,6 @@ class VideoBlurrer(QThread):
                 frame[inner_box.coords_as_slices()] = cv2.blur(
                     frame[inner_box.coords_as_slices()], (blur_size * 2 + 1, blur_size * 2 + 1)
                 )
-                cv2.rectangle
 
             elif detection.kind == "face":
                 center, axes = detection.ellipse_coordinates()
@@ -110,17 +105,11 @@ class VideoBlurrer(QThread):
             for tensor in results_list
         ]
 
-    def run(self):
+    def blur_video(self):
         """
         Write a copy of the input video stripped of identifiable information, i.e. faces and license plates
         """
-
-        # reset success and start timer
-        self.result["success"] = False
-        start = timer()
-
         # gather inputs from self.parameters
-        print("Worker started")
         input_path = self.parameters["input_path"]
         temp_output = f"{os.path.splitext(self.parameters['output_path'])[0]}_copy{os.path.splitext(self.parameters['output_path'])[1]}"
         output_path = self.parameters["output_path"]
@@ -138,7 +127,7 @@ class VideoBlurrer(QThread):
             meta = reader.get_meta_data()
             fps = meta["fps"]
             duration = meta["duration"]
-            length = duration * fps
+            length = int(duration * fps)
             audio_present = "audio_codec" in meta
 
             # save the video to a file
@@ -146,31 +135,30 @@ class VideoBlurrer(QThread):
                 temp_output, codec="libx264", fps=fps, quality=quality
             ) as writer:
 
-                # update GUI's progress bar on its maximum frames
-                self.setMaximum.emit(length)
+                with tqdm(total=length, desc="Processing video", unit="frames") as progress_bar:
+                    buffer = []
 
-                # loop through video
-                current_frame = 0
-                buffer = []
+                    for frame_read in reader:
+                        rgb_frame = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
+                        if len(buffer) < batch_size:
+                            buffer.append(rgb_frame)
+                        else:
+                            # buffer is full - detect information for all images in buffer
+                            new_detections = self.detect_identifiable_information(buffer)
+                            for frame, detections in zip(buffer, new_detections):
+                                frame = self.apply_blur(frame, detections)
+                                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                                writer.append_data(frame_rgb)
+                            progress_bar.update(len(buffer))
+                            buffer = [rgb_frame]
 
-                for frame_read in reader:
-                    if len(buffer) <= batch_size:
-                        buffer.append(frame_read)
-                    else:
-                        # buffer is full - detect information for all images in buffer
-                        new_detections = self.detect_identifiable_information(buffer)
-                        for frame, detections in zip(buffer, new_detections):
-                            frame = self.apply_blur(frame, detections)
-                            writer.append_data(frame)
-                        buffer = [frame_read]
-                    current_frame += 1
-                    self.updateProgress.emit(current_frame)
-
-                # Detect information for the rest of the buffer
-                new_detections = self.detect_identifiable_information(buffer)
-                for frame, detections in zip(buffer, new_detections):
-                    frame = self.apply_blur(frame, detections)
-                    writer.append_data(frame)
+                    # Detect information for the rest of the buffer
+                    new_detections = self.detect_identifiable_information(buffer)
+                    for frame, detections in zip(buffer, new_detections):
+                        frame = self.apply_blur(frame, detections)
+                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        writer.append_data(frame_rgb)
+                    progress_bar.update(len(buffer))
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):
@@ -178,7 +166,7 @@ class VideoBlurrer(QThread):
         else:
             ffmpeg_exe = os.getenv("FFMPEG_BINARY")
             if not ffmpeg_exe:
-                self.alert.emit(
+                print(
                     "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the envirnment variable 'FFMPEG_BINARY'."
                 )
                 return
@@ -212,10 +200,6 @@ class VideoBlurrer(QThread):
                 )
         else:
             os.rename(temp_output, output_path)
-
-        # store success and elapsed time
-        self.result["success"] = True
-        self.result["elapsed_time"] = timer() - start
 
 
 def setup_detector(weights_path: str):
