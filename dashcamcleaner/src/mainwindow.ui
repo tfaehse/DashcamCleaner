@@ -1,261 +1,278 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
-    <class>MainWindow</class>
-    <widget class="QMainWindow" name="MainWindow">
-        <property name="geometry">
-            <rect>
-                <x>0</x>
-                <y>0</y>
-                <width>534</width>
-                <height>188</height>
-            </rect>
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>687</width>
+    <height>263</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>DashcamCleaner</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLineEdit" name="line_source">
+        <property name="enabled">
+         <bool>true</bool>
         </property>
-        <property name="windowTitle">
-            <string>DashcamCleaner</string>
+        <property name="readOnly">
+         <bool>true</bool>
         </property>
-        <widget class="QWidget" name="centralwidget">
-            <layout class="QVBoxLayout" name="verticalLayout">
-                <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout">
-                        <item>
-                            <widget class="QLineEdit" name="line_source">
-                                <property name="enabled">
-                                    <bool>true</bool>
-                                </property>
-                                <property name="readOnly">
-                                    <bool>true</bool>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QPushButton" name="button_source">
-                                <property name="text">
-                                    <string>Select video</string>
-                                </property>
-                            </widget>
-                        </item>
-                    </layout>
-                </item>
-                <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_2">
-                        <item>
-                            <widget class="QLineEdit" name="line_target">
-                                <property name="enabled">
-                                    <bool>true</bool>
-                                </property>
-                                <property name="readOnly">
-                                    <bool>true</bool>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QPushButton" name="button_target">
-                                <property name="text">
-                                    <string>Select target</string>
-                                </property>
-                            </widget>
-                        </item>
-                    </layout>
-                </item>
-                <item>
-                    <widget class="Line" name="line">
-                        <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                        </property>
-                    </widget>
-                </item>
-                <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_3">
-                        <item>
-                            <widget class="QLabel" name="label_2">
-                                <property name="text">
-                                    <string>Frame memory:</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QSpinBox" name="spin_memory"/>
-                        </item>
-                        <item>
-                            <widget class="QLabel" name="label_3">
-                                <property name="text">
-                                    <string>Blur size:</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QSpinBox" name="spin_blur">
-                                <property name="value">
-                                    <number>9</number>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QLabel" name="label_5">
-                                <property name="text">
-                                    <string>Detection threshold:</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QDoubleSpinBox" name="double_spin_threshold">
-                                <property name="maximum">
-                                    <double>1.000000000000000</double>
-                                </property>
-                                <property name="singleStep">
-                                    <double>0.050000000000000</double>
-                                </property>
-                                <property name="value">
-                                    <double>0.300000000000000</double>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QLabel" name="label_6">
-                                <property name="text">
-                                    <string>ROI enlargement</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QDoubleSpinBox" name="double_spin_roimulti">
-                                <property name="minimum">
-                                    <double>0.800000000000000</double>
-                                </property>
-                                <property name="maximum">
-                                    <double>10.000000000000000</double>
-                                </property>
-                                <property name="singleStep">
-                                    <double>0.050000000000000</double>
-                                </property>
-                                <property name="value">
-                                    <double>1.000000000000000</double>
-                                </property>
-                            </widget>
-                        </item>
-                    </layout>
-                </item>
-                <item>
-                    <widget class="Line" name="line_2">
-                        <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                        </property>
-                    </widget>
-                </item>
-                <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_4">
-                        <item>
-                            <widget class="QLabel" name="label">
-                                <property name="text">
-                                    <string>Weights</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QComboBox" name="combo_box_weights"/>
-                        </item>
-                        <item>
-                            <widget class="QLabel" name="label_4">
-                                <property name="text">
-                                    <string>Inference size</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QComboBox" name="combo_box_scale">
-                                <property name="currentText">
-                                    <string>360p</string>
-                                </property>
-                                <item>
-                                    <property name="text">
-                                        <string>360p</string>
-                                    </property>
-                                </item>
-                                <item>
-                                    <property name="text">
-                                        <string>720p</string>
-                                    </property>
-                                </item>
-                                <item>
-                                    <property name="text">
-                                        <string>1080p</string>
-                                    </property>
-                                </item>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QLabel" name="label_7">
-                                <property name="text">
-                                    <string>Output Quality</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QSpinBox" name="spin_quality">
-                                <property name="maximum">
-                                    <number>10</number>
-                                </property>
-                                <property name="value">
-                                    <number>5</number>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <spacer name="horizontalSpacer">
-                                <property name="orientation">
-                                    <enum>Qt::Horizontal</enum>
-                                </property>
-                                <property name="sizeHint" stdset="0">
-                                    <size>
-                                        <width>40</width>
-                                        <height>20</height>
-                                    </size>
-                                </property>
-                            </spacer>
-                        </item>
-                    </layout>
-                </item>
-                <item>
-                    <widget class="Line" name="line_3">
-                        <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                        </property>
-                    </widget>
-                </item>
-                <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_5">
-                        <item>
-                            <widget class="QProgressBar" name="progress">
-                                <property name="enabled">
-                                    <bool>true</bool>
-                                </property>
-                                <property name="value">
-                                    <number>0</number>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QPushButton" name="button_start">
-                                <property name="text">
-                                    <string>Start</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QPushButton" name="button_abort">
-                                <property name="enabled">
-                                    <bool>false</bool>
-                                </property>
-                                <property name="text">
-                                    <string>Abort</string>
-                                </property>
-                            </widget>
-                        </item>
-                    </layout>
-                </item>
-            </layout>
-        </widget>
-    </widget>
-    <resources/>
-    <connections/>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_source">
+        <property name="text">
+         <string>Select video</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLineEdit" name="line_target">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_target">
+        <property name="text">
+         <string>Select target</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Frame memory:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="spin_memory"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Blur size:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="spin_blur">
+        <property name="value">
+         <number>9</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Detection threshold:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="double_spin_threshold">
+        <property name="maximum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.050000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.300000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>ROI enlargement</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="double_spin_roimulti">
+        <property name="minimum">
+         <double>0.800000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>10.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.050000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="Line" name="line_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Weights</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="combo_box_weights"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Inference size</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="combo_box_scale">
+        <property name="currentText">
+         <string>360p</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>360p</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>720p</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>1080p</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>Batch size</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="spin_batch">
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>200</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>Output Quality</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="spin_quality">
+        <property name="maximum">
+         <number>10</number>
+        </property>
+        <property name="value">
+         <number>5</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="Line" name="line_3">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <item>
+       <widget class="QProgressBar" name="progress">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_start">
+        <property name="text">
+         <string>Start</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_abort">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Abort</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
 </ui>

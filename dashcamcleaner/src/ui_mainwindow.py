@@ -1,26 +1,30 @@
 # -*- coding: utf-8 -*-
-
+# flake8: noqa
 ################################################################################
 ## Form generated from reading UI file 'mainwindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.2.2
+## Created by: Qt User Interface Compiler version 6.2.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import QCoreApplication, QMetaObject
-from PySide6.QtWidgets import (
-    QComboBox, QDoubleSpinBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
-    QProgressBar, QPushButton, QSizePolicy, QSpacerItem, QSpinBox, QVBoxLayout,
-    QWidget
-)
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QComboBox, QDoubleSpinBox, QFrame,
+    QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+    QProgressBar, QPushButton, QSizePolicy, QSpacerItem,
+    QSpinBox, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(534, 188)
+        MainWindow.resize(687, 263)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -39,6 +43,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.button_source)
 
+
         self.verticalLayout.addLayout(self.horizontalLayout)
 
         self.horizontalLayout_2 = QHBoxLayout()
@@ -54,6 +59,7 @@ class Ui_MainWindow(object):
         self.button_target.setObjectName(u"button_target")
 
         self.horizontalLayout_2.addWidget(self.button_target)
+
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
@@ -114,6 +120,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.double_spin_roimulti)
 
+
         self.verticalLayout.addLayout(self.horizontalLayout_3)
 
         self.line_2 = QFrame(self.centralwidget)
@@ -148,6 +155,18 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.combo_box_scale)
 
+        self.label_8 = QLabel(self.centralwidget)
+        self.label_8.setObjectName(u"label_8")
+
+        self.horizontalLayout_4.addWidget(self.label_8)
+
+        self.spin_batch = QSpinBox(self.centralwidget)
+        self.spin_batch.setObjectName(u"spin_batch")
+        self.spin_batch.setMinimum(1)
+        self.spin_batch.setMaximum(200)
+
+        self.horizontalLayout_4.addWidget(self.spin_batch)
+
         self.label_7 = QLabel(self.centralwidget)
         self.label_7.setObjectName(u"label_7")
 
@@ -163,6 +182,7 @@ class Ui_MainWindow(object):
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_4.addItem(self.horizontalSpacer)
+
 
         self.verticalLayout.addLayout(self.horizontalLayout_4)
 
@@ -193,6 +213,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.button_abort)
 
+
         self.verticalLayout.addLayout(self.horizontalLayout_5)
 
         MainWindow.setCentralWidget(self.centralwidget)
@@ -217,7 +238,9 @@ class Ui_MainWindow(object):
         self.combo_box_scale.setItemText(2, QCoreApplication.translate("MainWindow", u"1080p", None))
 
         self.combo_box_scale.setCurrentText(QCoreApplication.translate("MainWindow", u"360p", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Batch size", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Output Quality", None))
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
     # retranslateUi
+

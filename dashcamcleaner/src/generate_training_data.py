@@ -26,7 +26,7 @@ def setup_anonymizer(weights_path: str, obfuscation_parameters: str):
     :return: Anonymizer object
     """
     download_weights(download_directory=weights_path)
-    kernel_size, sigma, box_kernel_size = [int(x) for x in obfuscation_parameters.split(',')]
+    kernel_size, sigma, box_kernel_size = [int(x) for x in obfuscation_parameters.split(",")]
     # Anonymizer requires uneven kernel size
     if (kernel_size % 2) == 0:
         kernel_size += 1
@@ -34,10 +34,12 @@ def setup_anonymizer(weights_path: str, obfuscation_parameters: str):
     if (box_kernel_size % 2) == 0:
         box_kernel_size += 1
 
-    obfuscator = Obfuscator(kernel_size=int(kernel_size), sigma=float(sigma), box_kernel_size=int(box_kernel_size))
+    obfuscator = Obfuscator(
+        kernel_size=int(kernel_size), sigma=float(sigma), box_kernel_size=int(box_kernel_size)
+    )
     detectors = {
-        'face': Detector(kind='face', weights_path=get_weights_path(weights_path, kind='face')),
-        'plate': Detector(kind='plate', weights_path=get_weights_path(weights_path, kind='plate'))
+        "face": Detector(kind="face", weights_path=get_weights_path(weights_path, kind="face")),
+        "plate": Detector(kind="plate", weights_path=get_weights_path(weights_path, kind="plate")),
     }
     return Anonymizer(obfuscator=obfuscator, detectors=detectors)
 
@@ -88,14 +90,20 @@ class TrainingDataGenerator:
         self.labeled_data_from_pictures(randomized_pictures[train_pictures:], label_format, "val")
 
         # train videos
-        for index, vid in enumerate(tqdm(randomized_videos[:train_videos], desc="Processing training video file")):
+        for index, vid in enumerate(
+            tqdm(randomized_videos[:train_videos], desc="Processing training video file")
+        ):
             self.labeled_data_from_video(vid, index, label_format, "train")
 
         # validate videos
-        for index, vid in enumerate(tqdm(randomized_videos[train_videos:], desc="Processing validation video file")):
+        for index, vid in enumerate(
+            tqdm(randomized_videos[train_videos:], desc="Processing validation video file")
+        ):
             self.labeled_data_from_video(vid, index, label_format, "val")
 
-    def labeled_data_from_video(self, video_path: str, vid_num: int, label_format, folder_suffix, roi_multi=1.2):
+    def labeled_data_from_video(
+        self, video_path: str, vid_num: int, label_format, folder_suffix, roi_multi=1.2
+    ):
         """
         Extract frames and labels from a video
         :param video_path: path to video
@@ -113,13 +121,10 @@ class TrainingDataGenerator:
         length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         boxes = []
-        detection_thresholds = {
-            "face": 0.3,
-            "plate": 0.2
-        }
+        detection_thresholds = {"face": 0.3, "plate": 0.2}
 
         if cap.isOpened() is False:
-            print('error file not found')
+            print("error file not found")
             return
 
         counter = 0
@@ -150,8 +155,17 @@ class TrainingDataGenerator:
 
                         # save frame to folder
                         boxes.append(
-                            {"name": file_name, "type": detection.kind, "xmin": x_min, "xmax": x_max, "ymin": y_min,
-                             "ymax": y_max, "width": frame_width, "height": frame_height})
+                            {
+                                "name": file_name,
+                                "type": detection.kind,
+                                "xmin": x_min,
+                                "xmax": x_max,
+                                "ymin": y_min,
+                                "ymax": y_max,
+                                "width": frame_width,
+                                "height": frame_height,
+                            }
+                        )
                     cv2.imwrite(path_name, frame)
             else:
                 break
@@ -179,18 +193,22 @@ class TrainingDataGenerator:
                     height = group.iloc[0]["height"]
                     writer = Writer(os.path.basename(name), width, height)
                     for _, row in group.iterrows():
-                        writer.addObject(row["type"], row["xmin"], row["ymin"], row["xmax"], row["ymax"])
+                        writer.addObject(
+                            row["type"], row["xmin"], row["ymin"], row["xmax"], row["ymax"]
+                        )
                     writer.save(os.path.splitext(name)[0] + ".xml")
             elif label_format == "torch":
                 class_dict = {"plate": 0, "face": 1}
-                df['class'] = df['type'].apply(lambda x: class_dict[x])
+                df["class"] = df["type"].apply(lambda x: class_dict[x])
                 df.to_csv("labels.csv")
             else:
                 raise AttributeError(f"Label format {label_format} is not supported!")
         else:
             print("This video seems to contain no faces or plates whatsoever!")
 
-    def labeled_data_from_pictures(self, picture_paths: str, label_format: str, folder_suffix: str, roi_multi=1.2):
+    def labeled_data_from_pictures(
+        self, picture_paths: str, label_format: str, folder_suffix: str, roi_multi=1.2
+    ):
         """
         Extract frames and labels from a video
         :param picture_paths: paths to image files
@@ -200,10 +218,7 @@ class TrainingDataGenerator:
         :return:
         """
         boxes = []
-        detection_thresholds = {
-            "face": 0.3,
-            "plate": 0.2
-        }
+        detection_thresholds = {"face": 0.3, "plate": 0.2}
 
         counter = 0
         for pic_path in tqdm(picture_paths, desc=f"Processing {folder_suffix} image files"):
@@ -229,8 +244,17 @@ class TrainingDataGenerator:
 
                 # save frame to folder
                 boxes.append(
-                    {"name": file_name, "type": detection.kind, "xmin": x_min, "xmax": x_max, "ymin": y_min,
-                     "ymax": y_max, "width": frame_width, "height": frame_height})
+                    {
+                        "name": file_name,
+                        "type": detection.kind,
+                        "xmin": x_min,
+                        "xmax": x_max,
+                        "ymin": y_min,
+                        "ymax": y_max,
+                        "width": frame_width,
+                        "height": frame_height,
+                    }
+                )
             if len(new_detections) > 0:
                 cv2.imwrite(path_name, frame)
             counter += 1
@@ -254,11 +278,13 @@ class TrainingDataGenerator:
                     height = group.iloc[0]["height"]
                     writer = Writer(os.path.basename(name), width, height)
                     for _, row in group.iterrows():
-                        writer.addObject(row["type"], row["xmin"], row["ymin"], row["xmax"], row["ymax"])
+                        writer.addObject(
+                            row["type"], row["xmin"], row["ymin"], row["xmax"], row["ymax"]
+                        )
                     writer.save(os.path.splitext(name)[0] + ".xml")
             elif label_format == "torch":
                 class_dict = {"plate": 0, "face": 1}
-                df['class'] = df['type'].apply(lambda x: class_dict[x])
+                df["class"] = df["type"].apply(lambda x: class_dict[x])
                 df.to_csv("labels.csv")
             else:
                 raise AttributeError(f"Label format {label_format} is not supported!")
@@ -277,7 +303,8 @@ def write_yolo(row: pd.Series, folder_path: str, folder_suffix: str):
     file_name = os.path.splitext(row["name"])[0] + ".txt"
     with open(os.path.join(folder_path, "labels", folder_suffix, file_name), "a") as f:
         f.write(
-            f"""{row["yolo_class"]} {row["x_center"]} {row["y_center"]} {row["box_width"]} {row["box_height"]} \n""")
+            f"""{row["yolo_class"]} {row["x_center"]} {row["y_center"]} {row["box_width"]} {row["box_height"]} \n"""
+        )
 
 
 def parse_args():
@@ -286,16 +313,15 @@ def parse_args():
     :return:
     """
     parser = ArgumentParser()
-    parser.add_argument("input", type=str,
-                        help="input folder containing video and jpg files")
-    parser.add_argument("output", type=str,
-                        help="output folder for labeled training images")
-    parser.add_argument("labelformat", type=str,
-                        help="label format - yolo, voc or torch")
-    parser.add_argument("skipframes", type=int,
-                        help="for each analyzed image, skip n frames - to avoid too similar frames")
-    parser.add_argument("trainsplit", type=float,
-                        help="training split of all data")
+    parser.add_argument("input", type=str, help="input folder containing video and jpg files")
+    parser.add_argument("output", type=str, help="output folder for labeled training images")
+    parser.add_argument("labelformat", type=str, help="label format - yolo, voc or torch")
+    parser.add_argument(
+        "skipframes",
+        type=int,
+        help="for each analyzed image, skip n frames - to avoid too similar frames",
+    )
+    parser.add_argument("trainsplit", type=float, help="training split of all data")
     args = parser.parse_args()
     return args.input, args.output, args.labelformat, args.skipframes, args.trainsplit
 

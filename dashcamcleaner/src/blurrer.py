@@ -87,28 +87,28 @@ class VideoBlurrer(QThread):
         blurred = cv2.bitwise_and(temp, temp, mask=mask)
         return cv2.add(background, blurred)
 
-    def detect_identifiable_information(self, image: np.array):
+    def detect_identifiable_information(self, images: list):
         """
         Run plate and face detection on an input image
-        :param image: input image
+        :param images: input images
         :return: detected faces and plates
         """
         scale = self.parameters["inference_size"]
-        results = self.detector(image, size=scale)
-        boxes = []
-        for res in results.xyxy[0]:
-            detection_kind = "plate" if res[5].item() == 0 else "face"
-            boxes.append(
+        results_list = self.detector(images, size=scale).xyxy
+        return [
+            [
                 Box(
-                    res[0].item(),
-                    res[1].item(),
-                    res[2].item(),
-                    res[3].item(),
-                    res[4].item(),
-                    detection_kind,
+                    det[0],
+                    det[1],
+                    det[2],
+                    det[3],
+                    det[4],
+                    "plate" if det[5].item() == 0 else "face",
                 )
-            )
-        return boxes
+                for det in tensor
+            ]
+            for tensor in results_list
+        ]
 
     def run(self):
         """
@@ -126,48 +126,53 @@ class VideoBlurrer(QThread):
         output_path = self.parameters["output_path"]
         threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
+        batch_size = self.parameters["batch_size"]
 
         # customize detector
         self.detector.conf = threshold
 
         # open video file
-        cap = cv2.VideoCapture(input_path)
+        with imageio.get_reader(input_path) as reader:
 
-        # get the height and width of each frame for future debug outputs on frame
-        #  width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        #  height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        fps = cap.get(cv2.CAP_PROP_FPS)
+            # get the height and width of each frame for future debug outputs on frame
+            meta = reader.get_meta_data()
+            fps = meta["fps"]
+            duration = meta["duration"]
+            length = duration * fps
 
-        # save the video to a file
-        writer = imageio.get_writer(temp_output, codec="libx264", fps=fps, quality=quality)
+            # save the video to a file
+            with imageio.get_writer(
+                temp_output, codec="libx264", fps=fps, quality=quality
+            ) as writer:
 
-        # update GUI's progress bar on its maximum frames
-        self.setMaximum.emit(length)
+                # update GUI's progress bar on its maximum frames
+                self.setMaximum.emit(length)
 
-        if not cap.isOpened():
-            self.alert.emit("Error: Video file could not be found")
-            return
+                # loop through video
+                current_frame = 0
+                buffer = []
 
-        # loop through video
-        current_frame = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
+                for frame_read in reader:
+                    rgb_frame = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
+                    if len(buffer) <= batch_size:
+                        buffer.append(rgb_frame)
+                    else:
+                        # buffer is full - detect information for all images in buffer
+                        new_detections = self.detect_identifiable_information(buffer)
+                        for frame, detections in zip(buffer, new_detections):
+                            frame = self.apply_blur(frame, detections)
+                            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                            writer.append_data(frame_rgb)
+                        buffer = [rgb_frame]
+                    current_frame += 1
+                    self.updateProgress.emit(current_frame)
 
-            if ret:
-                new_detections = self.detect_identifiable_information(frame.copy())
-                frame = self.apply_blur(frame, new_detections)
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                writer.append_data(frame_rgb)
-            else:
-                break
-
-            current_frame += 1
-            self.updateProgress.emit(current_frame)
-
-        self.detections = []
-        cap.release()
-        writer.close()
+                # Detect information for the rest of the buffer
+                new_detections = self.detect_identifiable_information(buffer)
+                for frame, detections in zip(buffer, new_detections):
+                    frame = self.apply_blur(frame, detections)
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    writer.append_data(frame_rgb)
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):
@@ -195,7 +200,8 @@ class VideoBlurrer(QThread):
                 "1:1",
                 "-shortest",
                 output_path,
-            ]
+            ],
+            stdout=subprocess.DEVNULL,
         )
 
         # delete temporary output that had no audio track
@@ -217,7 +223,7 @@ def setup_detector(weights_path: str):
     :param weights_path: path to .pt file with this repo's weights
     :return: initialized yolov5 detector
     """
-    model = torch.hub.load("ultralytics/yolov5", "custom", weights_path)
+    model = torch.hub.load("ultralytics/yolov5", "custom", weights_path, _verbose=False)
     if torch.cuda.is_available():
         print(f"Using {torch.cuda.get_device_name(torch.cuda.current_device())}.")
         model.cuda()
