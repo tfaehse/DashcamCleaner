@@ -32,7 +32,7 @@ class CLI:
             "inference_size": inference_size,
             "quality": self.opt.quality,
             "batch_size": self.opt.batch_size,
-            "no_faces": self.opt.no_faces
+            "no_faces": self.opt.no_faces,
         }
         if self.blurrer:
             self.blurrer.parameters = parameters
@@ -99,7 +99,14 @@ def parse_arguments():
         choices=range(1, 11),
         default=10,
     )
-    parser.add_argument("-nf", "--no_faces", action="store_true", required=False, help="do not censor faces", default=False)
+    parser.add_argument(
+        "-nf",
+        "--no_faces",
+        action="store_true",
+        required=False,
+        help="do not censor faces",
+        default=False,
+    )
     return parser.parse_args()
 
 
