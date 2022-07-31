@@ -19,7 +19,11 @@ class VideoBlurrer:
         """
         self.parameters = parameters
         self.detections = []
-        weights_path = os.path.join("weights", f"{weights_name}.pt".replace(".pt.pt", ".pt"))
+        weights_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "weights",
+            f"{weights_name}.pt".replace(".pt.pt", ".pt"),
+        )
         self.detector = setup_detector(weights_path)
         print("Worker created")
 

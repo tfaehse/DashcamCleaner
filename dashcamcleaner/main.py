@@ -26,7 +26,8 @@ class MainWindow(QMainWindow):
         Constructor
         """
         self.receive_attempts = 0
-        self.settings = QSettings("gui.ini", QSettings.IniFormat)
+        save_path = os.path.join(os.path.dirname(__file__), "gui.ini")
+        self.settings = QSettings(save_path, QSettings.IniFormat)
         self.blur_wrapper = None
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
@@ -41,7 +42,8 @@ class MainWindow(QMainWindow):
 
     def load_weights_options(self):
         self.ui.combo_box_weights.clear()
-        for net_path in glob("./weights/*.pt"):
+        source_folder = os.path.join(os.path.dirname(__file__))
+        for net_path in glob(source_folder + "/weights/*.pt"):
             clean_name = os.path.splitext(os.path.basename(net_path))[0]
             self.ui.combo_box_weights.addItem(clean_name)
         self.setup_blurrer()
@@ -115,7 +117,7 @@ class MainWindow(QMainWindow):
             "inference_size": inference_size,
             "quality": self.ui.spin_quality.value(),
             "batch_size": self.ui.spin_batch.value(),
-            "no_faces": False
+            "no_faces": False,
         }
         if self.blur_wrapper:
             self.blur_wrapper.blurrer.parameters = parameters
