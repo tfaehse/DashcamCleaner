@@ -139,6 +139,7 @@ class VideoBlurrer(QThread):
             fps = meta["fps"]
             duration = meta["duration"]
             length = duration * fps
+            audio_present = "audio_codec" in meta
 
             # save the video to a file
             with imageio.get_writer(
@@ -153,17 +154,15 @@ class VideoBlurrer(QThread):
                 buffer = []
 
                 for frame_read in reader:
-                    rgb_frame = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
                     if len(buffer) <= batch_size:
-                        buffer.append(rgb_frame)
+                        buffer.append(frame_read)
                     else:
                         # buffer is full - detect information for all images in buffer
                         new_detections = self.detect_identifiable_information(buffer)
                         for frame, detections in zip(buffer, new_detections):
                             frame = self.apply_blur(frame, detections)
-                            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                            writer.append_data(frame_rgb)
-                        buffer = [rgb_frame]
+                            writer.append_data(frame)
+                        buffer = [frame_read]
                     current_frame += 1
                     self.updateProgress.emit(current_frame)
 
@@ -171,8 +170,7 @@ class VideoBlurrer(QThread):
                 new_detections = self.detect_identifiable_information(buffer)
                 for frame, detections in zip(buffer, new_detections):
                     frame = self.apply_blur(frame, detections)
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    writer.append_data(frame_rgb)
+                    writer.append_data(frame)
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):
@@ -184,33 +182,36 @@ class VideoBlurrer(QThread):
                     "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the envirnment variable 'FFMPEG_BINARY'."
                 )
                 return
-        subprocess.run(
-            [
-                ffmpeg_exe,
-                "-y",
-                "-i",
-                temp_output,
-                "-i",
-                input_path,
-                "-c",
-                "copy",
-                "-map",
-                "0:0",
-                "-map",
-                "1:1",
-                "-shortest",
-                output_path,
-            ],
-            stdout=subprocess.DEVNULL,
-        )
 
-        # delete temporary output that had no audio track
-        try:
-            os.remove(temp_output)
-        except Exception as e:
-            self.alert.emit(
-                f"Could not delete temporary, muted video. Maybe another process (like a cloud service or antivirus) is using it already. \n{str(e)}"
+        if audio_present:
+            subprocess.run(
+                [
+                    ffmpeg_exe,
+                    "-y",
+                    "-i",
+                    temp_output,
+                    "-i",
+                    input_path,
+                    "-c",
+                    "copy",
+                    "-map",
+                    "0:0",
+                    "-map",
+                    "1:1",
+                    "-shortest",
+                    output_path,
+                ],
+                stdout=subprocess.DEVNULL,
             )
+            # delete temporary output that had no audio track
+            try:
+                os.remove(temp_output)
+            except Exception as e:
+                self.alert.emit(
+                    f"Could not delete temporary, muted video. Maybe another process (like a cloud storage service or antivirus) is using it already.\n{str(e)}"
+                )
+        else:
+            os.rename(temp_output, output_path)
 
         # store success and elapsed time
         self.result["success"] = True
