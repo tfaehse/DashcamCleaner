@@ -139,7 +139,9 @@ class VideoBlurrer:
                 temp_output, codec="libx264", fps=fps, quality=quality
             ) as writer:
 
-                with tqdm(total=length, desc="Processing video", unit="frames") as progress_bar:
+                with tqdm(
+                    total=length, desc="Processing video", unit="frames", dynamic_ncols=True
+                ) as progress_bar:
                     buffer = []
 
                     for frame_read in reader:
