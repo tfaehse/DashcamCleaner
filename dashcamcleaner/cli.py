@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import signal
-from argparse import ArgumentParser
-
+import argparse
 from src.blurrer import VideoBlurrer
 
 # makes it possible to interrupt while running in other thread
@@ -15,6 +14,9 @@ class CLI:
         self.blurrer = None
 
     def start_blurring(self):
+        # dump parameters
+        print(vars(opt))
+
         # setup blurrer
         self.blurrer = VideoBlurrer(self.opt.weights)
 
@@ -43,63 +45,104 @@ class CLI:
 
 
 def parse_arguments():
-    parser = ArgumentParser(
-        description=" This tool allows you to automatically censor faces and number plates on dashcam footage."
+    class CustomHelpFormatter(argparse.HelpFormatter):
+        def __init__(self, prog):
+            super().__init__(prog, max_help_position=40, width=100)
+
+        def _format_action_invocation(self, action):
+            if not action.option_strings or action.nargs == 0:
+                return super()._format_action_invocation(action)
+            default = self._get_default_metavar_for_optional(action)
+            args_string = self._format_args(action, default)
+            return ", ".join(action.option_strings) + " " + args_string
+
+    parser = argparse.ArgumentParser(
+        formatter_class=CustomHelpFormatter,
+        description=" This tool allows you to automatically censor faces and number plates on dashcam footage.",
     )
 
-    required_named = parser.add_argument_group("required named arguments")
-
-    required_named.add_argument(
-        "-i", "--input", metavar="INPUT_PATH", required=True, help="input video file path", type=str
-    )
-    required_named.add_argument(
+    required = parser.add_argument_group("required arguments")
+    required.add_argument("-i", "--input", required=True, help="input video file path", type=str)
+    required.add_argument(
         "-o",
         "--output",
-        metavar="OUTPUT_NAME",
         required=True,
         help="output video file path",
         type=str,
     )
-    required_named.add_argument(
-        "-w", "--weights", metavar="WEIGHTS_FILE_NAME", required=True, help="", type=str
-    )
-    required_named.add_argument(
-        "--threshold", required=True, help="detection threshold", type=float
-    )
-    required_named.add_argument(
-        "--blur_size", required=True, help="granularity of the blurring filter", type=int
-    )
-    required_named.add_argument(
-        "--frame_memory", required=True, help="blur objects in the last x frames too", type=int
-    )
 
-    parser.add_argument(
+    optional = parser.add_argument_group("optional arguments")
+    optional.add_argument(
+        "-w",
+        "--weights",
+        required=False,
+        default="720p_medium_mosaic",
+        help="Weights file to use. See readme for the differences",
+        type=str,
+    )
+    optional.add_argument(
+        "-s",
         "--batch_size",
-        help="inference batch size - large values require a lof of memory",
+        help="inference batch size - large values require a lof of memory and may cause crashes!",
         type=int,
         default=1,
+        metavar="[1,1024]",
     )
-    parser.add_argument(
-        "--inference_size", help="vertical inference size, e.g. 1080 or fHD", type=int, default=1080
+    optional.add_argument(
+        "-b",
+        "--blur_size",
+        required=False,
+        help="granularity of the blurring filter",
+        type=int,
+        default=9,
+        metavar="[1-99]",
     )
-    parser.add_argument(
+    optional.add_argument(
+        "-if",
+        "--inference_size",
+        help="vertical inference size, e.g. 1080 or 720",
+        type=int,
+        default=720,
+        metavar="[144-2160]",
+    )
+    optional.add_argument(
+        "-t",
+        "--threshold",
+        required=False,
+        help="detection threshold",
+        type=float,
+        default=0.4,
+        metavar="[0-1]",
+    )
+    optional.add_argument(
+        "-r",
         "--roi_multi",
         required=False,
         help="increase/decrease area that will be blurred - 1 means no change",
         type=float,
         default=1.0,
+        metavar="[0-2]",
     )
-    parser.add_argument(
+    optional.add_argument(
         "-q",
         "--quality",
         metavar="[1, 10]",
         required=False,
-        help="quality of the resulting video. in range [1, 10] from 1 - bad to 10 - best, default: 10",
+        help="quality of the resulting video. higher = better, default: 10",
         type=int,
         choices=range(1, 11),
         default=10,
     )
-    parser.add_argument(
+    optional.add_argument(
+        "-f",
+        "--frame_memory",
+        required=False,
+        help="blur objects in the last x frames too",
+        type=int,
+        default=0,
+        metavar="[0-5]",
+    )
+    optional.add_argument(
         "-nf",
         "--no_faces",
         action="store_true",

@@ -97,26 +97,30 @@ For reference: even at 1080p inference, i.e. an inference scale of 1, a 1080p30f
 There's now also a fairly simple CLI to blur a video:
 
 ```
-python dashcamcleaner/cli.py -h
-usage: cli.py [-h] -i INPUT_PATH -o OUTPUT_NAME -w WEIGHTS_FILE_NAME --threshold THRESHOLD --blur_size BLUR_SIZE --frame_memory FRAME_MEMORY [--batch_size BATCH_SIZE] [--inference_size INFERENCE_SIZE]
-              [--roi_multi ROI_MULTI] [-q [1, 10]] [-nf]
+python cli.py -h
+usage: cli.py [-h] -i INPUT -o OUTPUT [-w WEIGHTS] [-s [1,1024]] [-b [1-99]] [-if [144-2160]]
+              [-t [0-1]] [-r [0-2]] [-q [1, 10]] -f [0-5] [-nf]
+
+This tool allows you to automatically censor faces and number plates on dashcam footage.
+
+options:
+  -h, --help                        show this help message and exit
 
 required arguments:
-  input           input video file path
-  output          output video file path
-  weights         weights file name
-  threshold       detection threshold
-  blur_size       granularitay of the blurring filter
-  frame_memory    blur objects in the last x frames too
+  -i, --input INPUT                 input video file path
+  -o, --output OUTPUT               output video file path
 
 optional arguments:
-  inference_size  vertical inference size, e.g. 1080 or fHD
-  roi_multi       increase/decrease area that will be blurred - 1 means no change
-  batch_size      number of frames detection is run on at once
-  quality         quality of the resulting video
-  no_facea        don't blur out faces
-
-  -h, --help      show this help message and exit
+  -w, --weights WEIGHTS             Weights file to use. See readme for the differences
+  -s, --batch_size [1,1024]         inference batch size - large values require a lof of memory and
+                                    may cause crashes!
+  -b, --blur_size [1-99]            granularity of the blurring filter
+  -if, --inference_size [144-2160]  vertical inference size, e.g. 1080 or 720
+  -t, --threshold [0-1]             detection threshold
+  -r, --roi_multi [0-2]             increase/decrease area that will be blurred - 1 means no change
+  -q, --quality [1, 10]             quality of the resulting video. higher = better, default: 10
+  -f, --frame_memory [0-5]          blur objects in the last x frames too
+  -nf, --no_faces                   do not censor faces
 ```
 For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.
 
@@ -126,6 +130,7 @@ For now, there are no default values and all parameters have to be provided (in 
 DashcamCleaner now supports loading weights dynamically, differently trained networks can be selected in the user interface. As part of this change, I will distribute trained networks for German roads with different training parameters over the next weeks:
 - different training image resolutions
 - different network depths, i.e. YOLOv5's small and medium definitions
+- training with (_mosaic) and without (_rect) yolov5's mosaic dataloader.
 
 Once this is completed, I intend to publish an analysis on how training and inference image size and network depth affect performance and quality of the program.
 
@@ -133,8 +138,9 @@ As a rule of thumb:
 - bigger images lead to better detection of small objects, for both training and inference
 - deeper networks have a higher ceiling for object detection but slow down training and inference
 - lowering inference image size can dramatically speed up the program
+- the mosaic dataloader makes a large, positive impact. This was slightly unexpected for me, I assumed the (higher) resolution of fixed-size training would improve results, given that lots of objects are very small
 
-In summary, you should select the highest inference image size you can afford. The impact of higher training image sizes and deeper networks will be investigated once training has been completed!
+In summary, you should select the highest inference image size you can afford. Definitely go for the _mosaic weights. The impact of higher training image sizes and deeper networks will be investigated once training has been completed!
 
 <!-- ROADMAP -->
 ## Roadmap
