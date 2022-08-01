@@ -33,6 +33,7 @@ class CLI:
             "roi_multi": self.opt.roi_multi,
             "inference_size": inference_size,
             "quality": self.opt.quality,
+            "constant_rate_factor": self.opt.constant_rate_factor,
             "batch_size": self.opt.batch_size,
             "no_faces": self.opt.no_faces,
         }
@@ -128,10 +129,20 @@ def parse_arguments():
         "--quality",
         metavar="[1, 10]",
         required=False,
-        help="quality of the resulting video. higher = better, default: 10",
+        help="Quality of the extracted frames and thus the resulting video. higher = better, default: 10.",
         type=int,
         choices=range(1, 11),
         default=10,
+    )
+    optional.add_argument(
+        "-crf",
+        "--constant_rate_factor",
+        metavar="[-1, 51]",
+        required=False,
+        help="""Quality of the resulting video. lower = better, default: -1, meaning "copy the blurred frames without compression". Takes the extracted frames quality into account. If >= 0, this value is passed to ffmpeg at the end, otherwise ffmpeg will copy and not remux the blurred frames.""",
+        type=int,
+        choices=range(-1, 51 + 1),
+        default=-1,
     )
     optional.add_argument(
         "-f",

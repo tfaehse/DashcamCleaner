@@ -178,25 +178,49 @@ class VideoBlurrer:
                 return
 
         if audio_present:
-            subprocess.run(
-                [
-                    ffmpeg_exe,
-                    "-y",
-                    "-i",
-                    temp_output,
-                    "-i",
-                    input_path,
-                    "-c",
-                    "copy",
-                    "-map",
-                    "0:0",
-                    "-map",
-                    "1:1",
-                    "-shortest",
-                    output_path,
-                ],
-                stdout=subprocess.DEVNULL,
-            )
+            if not self.parameters["constant_rate_factor"] or self.parameters["constant_rate_factor"] < 0:
+                subprocess.run(
+                    [
+                        ffmpeg_exe,
+                        "-y",
+                        "-i",
+                        temp_output,
+                        "-i",
+                        input_path,
+                        "-c",
+                        "copy",
+                        "-map",
+                        "0:0",
+                        "-map",
+                        "1:1",
+                        "-shortest",
+                        output_path,
+                    ],
+                    stdout=subprocess.DEVNULL,
+                )
+            elif self.parameters["constant_rate_factor"] and self.parameters["constant_rate_factor"] >= 0:
+                subprocess.run(
+                    [
+                        ffmpeg_exe,
+                        "-y",
+                        "-i",
+                        temp_output,
+                        "-i",
+                        input_path,
+                        "-acodec",
+                        "copy",
+                        "-crf",
+                        self.parameters["constant_rate_factor"],
+                        "-map",
+                        "0:0",
+                        "-map",
+                        "1:1",
+                        "-shortest",
+                        output_path,
+                    ],
+                    stdout=subprocess.DEVNULL,
+                )
+
             # delete temporary output that had no audio track
             try:
                 os.remove(temp_output)
