@@ -210,7 +210,7 @@ class VideoBlurrer:
                         "-acodec",
                         "copy",
                         "-crf",
-                        self.parameters["constant_rate_factor"],
+                        f"{self.parameters['constant_rate_factor']}",
                         "-map",
                         "0:0",
                         "-map",
