@@ -128,9 +128,9 @@ def parse_arguments():
         "--quality",
         metavar="[1, 10]",
         required=False,
-        help="quality of the resulting video. higher = better, default: 10",
-        type=int,
-        choices=range(1, 11),
+        help="quality of the resulting video. higher = better, default: 10. conversion to crf: ⌊(1-q/10)*51⌋",
+        type=float,
+        choices=[round(x / 10, ndigits=2) for x in range(10, 101)],
         default=10,
     )
     optional.add_argument(
