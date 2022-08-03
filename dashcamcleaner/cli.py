@@ -31,6 +31,7 @@ class CLI:
             "quality": self.opt.quality,
             "batch_size": self.opt.batch_size,
             "no_faces": self.opt.no_faces,
+            "stabilize": self.opt.stabilize
         }
 
         # setup blurrer
@@ -77,7 +78,7 @@ def parse_arguments():
         type=str,
     )
     optional.add_argument(
-        "-s",
+        "-bs",
         "--batch_size",
         help="inference batch size - large values require a lof of memory and may cause crashes!",
         type=int,
@@ -144,6 +145,14 @@ def parse_arguments():
         action="store_true",
         required=False,
         help="do not censor faces",
+        default=False,
+    )
+    optional.add_argument(
+        "-s",
+        "--stabilize",
+        action="store_true",
+        required=False,
+        help="stabilize input video",
         default=False,
     )
     return parser.parse_args()

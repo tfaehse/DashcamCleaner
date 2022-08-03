@@ -1,5 +1,4 @@
-imageio>=2.9.0
-imageio-ffmpeg>=0.4.5
+av>=9.2.0
 matplotlib>=3.2.2
 numpy>=1.18.5
 opencv-python>=4.1.2
@@ -15,3 +14,4 @@ torch==1.8.1
 torchaudio==0.8.1
 torchvision>=0.8.1
 tqdm>=4.41.0
+vidstab>=1.7.4

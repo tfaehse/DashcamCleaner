@@ -1,13 +1,9 @@
-import os
-import subprocess
+from shutil import which
 from timeit import default_timer as timer
 
-import cv2
-import imageio
-import numpy as np
 from PySide6.QtCore import QThread, Signal
-from src.blurrer import VideoBlurrer
-from shutil import which
+from src.blurrer import VideoBlurrer, batch_iter
+from src.video_utils import VideoReader, VideoWriter
 
 
 class qtVideoBlurWrapper(QThread, VideoBlurrer):
@@ -23,7 +19,22 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
         """
         QThread.__init__(self)
         VideoBlurrer.__init__(self, weights_name, parameters)
-        self.result = {"success": False, "elapsed_time": 0}
+        self.elapsed = None
+        self._abort = False
+
+    def set_abort(self):
+        """
+        Set abort flag
+        :return:
+        """
+        self._abort = True
+
+    def reset(self):
+        """
+        Reset blurrer
+        :return:
+        """
+        self.elapsed = None
         self._abort = False
 
     def run(self):
@@ -31,109 +42,52 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
         Write a copy of the input video stripped of identifiable information, i.e. faces and license plates
         """
 
-        # reset success and start timer
-        self.result["success"] = False
+        # reset elapsed time and start timer
+        self.elapsed = None
         start = timer()
 
         # gather inputs from self.parameters
         input_path = self.parameters["input_path"]
-        temp_output = f"{os.path.splitext(self.parameters['output_path'])[0]}_copy{os.path.splitext(self.parameters['output_path'])[1]}"
         output_path = self.parameters["output_path"]
         threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
         batch_size = self.parameters["batch_size"]
+        stabilize = self.parameters["stabilize"]
 
         # customize detector
         self.detector.conf = threshold
 
         # open video file
-        with imageio.get_reader(input_path) as reader:
+        with VideoReader(input_path, stabilize) as reader:
 
             # get the height and width of each frame for future debug outputs on frame
-            meta = reader.get_meta_data()
-            fps = meta["fps"]
-            duration = meta["duration"]
-            length = int(duration * fps)
-            audio_present = "audio_codec" in meta
+            meta = reader.get_metadata()
+            print(meta)
 
             # save the video to a file
-            with imageio.get_writer(
-                temp_output, codec="libx264", fps=fps, quality=quality
+            with VideoWriter(
+                output_path, input_path, meta["fps"], meta["width"], meta["height"], quality
             ) as writer:
-
                 # update GUI's progress bar on its maximum frames
-                self.setMaximum.emit(length)
+                self.setMaximum.emit(meta["frames"])
 
-                buffer = []
                 current_frame = 0
 
-                for frame_read in reader:
-                    rgb_frame = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
-                    if len(buffer) < batch_size:
-                        buffer.append(rgb_frame)
-                    else:
-                        # buffer is full - detect information for all images in buffer
-                        new_detections = self.detect_identifiable_information(buffer)
-                        for frame, detections in zip(buffer, new_detections):
-                            frame = self.apply_blur(frame, detections)
-                            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                            writer.append_data(frame_rgb)
-                        current_frame += len(buffer)
-                        self.updateProgress.emit(current_frame)
-                        buffer = [rgb_frame]
+                for batch in batch_iter(reader, batch_size):
+                    if self._abort:
+                        writer.set_fail()
+                        return
 
-                # Detect information for the rest of the buffer
-                new_detections = self.detect_identifiable_information(buffer)
-                for frame, detections in zip(buffer, new_detections):
-                    frame = self.apply_blur(frame, detections)
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    writer.append_data(frame_rgb)
-                current_frame += len(buffer)
-                self.updateProgress.emit(current_frame)
-
-        # copy over audio stream from original video to edited video
-        if is_installed("ffmpeg"):
-            ffmpeg_exe = "ffmpeg"
-        else:
-            ffmpeg_exe = os.getenv("FFMPEG_BINARY")
-            if not ffmpeg_exe:
-                self.alert.emit(
-                    "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the envirnment variable 'FFMPEG_BINARY'."
-                )
-                return
-        if audio_present:
-            subprocess.run(
-                [
-                    ffmpeg_exe,
-                    "-y",
-                    "-i",
-                    temp_output,
-                    "-i",
-                    input_path,
-                    "-c",
-                    "copy",
-                    "-map",
-                    "0:0",
-                    "-map",
-                    "1:1",
-                    "-shortest",
-                    output_path,
-                ],
-                stdout=subprocess.DEVNULL,
-            )
-            # delete temporary output that had no audio track
-            try:
-                os.remove(temp_output)
-            except Exception as e:
-                self.alert.emit(
-                    f"Could not delete temporary, muted video. Maybe another process (like a cloud storage service or antivirus) is using it already.\n{str(e)}"
-                )
-        else:
-            os.rename(temp_output, output_path)
+                    # buffer is full - detect information for all images in buffer
+                    new_detections = self.detect_identifiable_information(batch)
+                    for frame, detections in zip(batch, new_detections):
+                        frame = self.apply_blur(frame, detections)
+                        writer.write_frame(frame)
+                    current_frame += len(batch)
+                    self.updateProgress.emit(current_frame)
 
         # store success and elapsed time
-        self.result["success"] = True
-        self.result["elapsed_time"] = timer() - start
+        self.elapsed = timer() - start
 
 
 def is_installed(name):

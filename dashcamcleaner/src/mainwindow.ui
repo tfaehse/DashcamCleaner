@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>687</width>
-    <height>263</height>
+    <height>319</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -196,10 +196,34 @@
          <number>1</number>
         </property>
         <property name="maximum">
-         <number>200</number>
+         <number>2048</number>
         </property>
        </widget>
       </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="Line" name="line_4">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
       <item>
        <widget class="QLabel" name="label_7">
         <property name="text">
@@ -218,7 +242,14 @@
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer">
+       <widget class="QCheckBox" name="check_stabilize">
+        <property name="text">
+         <string>Stabilize input</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>

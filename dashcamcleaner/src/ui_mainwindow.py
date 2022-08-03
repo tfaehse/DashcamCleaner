@@ -15,16 +15,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QDoubleSpinBox, QFrame,
-    QHBoxLayout, QLabel, QLineEdit, QMainWindow,
-    QProgressBar, QPushButton, QSizePolicy, QSpacerItem,
-    QSpinBox, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
+    QFrame, QHBoxLayout, QLabel, QLineEdit,
+    QMainWindow, QProgressBar, QPushButton, QSizePolicy,
+    QSpacerItem, QSpinBox, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(687, 263)
+        MainWindow.resize(687, 319)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -163,21 +163,9 @@ class Ui_MainWindow(object):
         self.spin_batch = QSpinBox(self.centralwidget)
         self.spin_batch.setObjectName(u"spin_batch")
         self.spin_batch.setMinimum(1)
-        self.spin_batch.setMaximum(200)
+        self.spin_batch.setMaximum(2048)
 
         self.horizontalLayout_4.addWidget(self.spin_batch)
-
-        self.label_7 = QLabel(self.centralwidget)
-        self.label_7.setObjectName(u"label_7")
-
-        self.horizontalLayout_4.addWidget(self.label_7)
-
-        self.spin_quality = QSpinBox(self.centralwidget)
-        self.spin_quality.setObjectName(u"spin_quality")
-        self.spin_quality.setMaximum(10)
-        self.spin_quality.setValue(5)
-
-        self.horizontalLayout_4.addWidget(self.spin_quality)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -185,6 +173,39 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout.addLayout(self.horizontalLayout_4)
+
+        self.line_4 = QFrame(self.centralwidget)
+        self.line_4.setObjectName(u"line_4")
+        self.line_4.setFrameShape(QFrame.HLine)
+        self.line_4.setFrameShadow(QFrame.Sunken)
+
+        self.verticalLayout.addWidget(self.line_4)
+
+        self.horizontalLayout_6 = QHBoxLayout()
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.label_7 = QLabel(self.centralwidget)
+        self.label_7.setObjectName(u"label_7")
+
+        self.horizontalLayout_6.addWidget(self.label_7)
+
+        self.spin_quality = QSpinBox(self.centralwidget)
+        self.spin_quality.setObjectName(u"spin_quality")
+        self.spin_quality.setMaximum(10)
+        self.spin_quality.setValue(5)
+
+        self.horizontalLayout_6.addWidget(self.spin_quality)
+
+        self.check_stabilize = QCheckBox(self.centralwidget)
+        self.check_stabilize.setObjectName(u"check_stabilize")
+
+        self.horizontalLayout_6.addWidget(self.check_stabilize)
+
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_6.addItem(self.horizontalSpacer_2)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout_6)
 
         self.line_3 = QFrame(self.centralwidget)
         self.line_3.setObjectName(u"line_3")
@@ -240,6 +261,7 @@ class Ui_MainWindow(object):
         self.combo_box_scale.setCurrentText(QCoreApplication.translate("MainWindow", u"360p", None))
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"Batch size", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Output Quality", None))
+        self.check_stabilize.setText(QCoreApplication.translate("MainWindow", u"Stabilize input", None))
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
     # retranslateUi

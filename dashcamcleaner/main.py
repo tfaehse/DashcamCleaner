@@ -6,18 +6,11 @@ from glob import glob
 
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
-    QApplication,
-    QComboBox,
-    QDoubleSpinBox,
-    QFileDialog,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QRadioButton,
-    QSpinBox,
+    QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit,
+    QMainWindow, QMessageBox, QRadioButton, QSpinBox
 )
-from src.ui_mainwindow import Ui_MainWindow
 from src.qt_wrapper import qtVideoBlurWrapper
+from src.ui_mainwindow import Ui_MainWindow
 
 
 class MainWindow(QMainWindow):
@@ -37,7 +30,7 @@ class MainWindow(QMainWindow):
         self.ui.button_source.clicked.connect(self.button_source_clicked)
         self.ui.button_start.clicked.connect(self.button_start_clicked)
         self.ui.button_target.clicked.connect(self.button_target_clicked)
-        self.ui.button_abort.clicked.connect(self.button_abort_clicked)
+        self.ui.button_abort.clicked.connect(self.blur_wrapper.set_abort)
         self.ui.combo_box_weights.currentIndexChanged.connect(self.setup_blurrer)
 
     def load_weights_options(self):
@@ -72,16 +65,6 @@ class MainWindow(QMainWindow):
         msg_box.setText(message)
         msg_box.exec()
 
-    def button_abort_clicked(self):
-        """
-        Callback for button_abort
-        """
-        self.force_blurrer_quit()
-        self.ui.progress.setValue(0)
-        self.ui.button_start.setEnabled(True)
-        self.ui.button_abort.setEnabled(False)
-        self.setup_blurrer()
-
     def setProgress(self, value: int):
         """
         Set progress bar's current progress
@@ -109,6 +92,7 @@ class MainWindow(QMainWindow):
             "quality": self.ui.spin_quality.value(),
             "batch_size": self.ui.spin_batch.value(),
             "no_faces": False,
+            "stabilize": self.ui.check_stabilize.isChecked(),
         }
 
     def button_start_clicked(self):
@@ -193,22 +177,28 @@ class MainWindow(QMainWindow):
                     else:
                         obj.setCurrentIndex(index)
 
+            if isinstance(obj, QCheckBox):
+                name = obj.objectName()
+                value = self.settings.value(name)
+                if value:
+                    obj.setChecked(value == "true")
+
     def blur_wrapper_finished(self):
         """
         Create a new blurrer, setup UI and notify the user
         """
         msg_box = QMessageBox()
-        if self.blur_wrapper and self.blur_wrapper.result["success"]:
-            minutes = int(self.blur_wrapper.result["elapsed_time"] // 60)
-            seconds = round(self.blur_wrapper.result["elapsed_time"] % 60)
-            msg_box.setText(
-                f"Video blurred successfully in {minutes} minutes and {seconds} seconds."
-            )
+        if self.blur_wrapper and self.blur_wrapper.elapsed is not None:
+            minutes = int(self.blur_wrapper.elapsed // 60)
+            seconds = round(self.blur_wrapper.elapsed % 60)
+            msg_box.setText(f"Blurring succeeded in {minutes} minutes and {seconds} seconds.")
         else:
-            msg_box.setText("Blurring resulted in errors.")
+            msg_box.setText("Blurrer was aborted!")
         msg_box.exec()
         if not self.blur_wrapper:
             self.setup_blurrer()
+        else:
+            self.blur_wrapper.reset()
         self.ui.button_start.setEnabled(True)
         self.ui.button_abort.setEnabled(False)
         self.ui.progress.setValue(0)
@@ -241,6 +231,11 @@ class MainWindow(QMainWindow):
             if isinstance(obj, QComboBox):
                 index = obj.currentIndex()  # get current index from combobox
                 value = obj.itemText(index)
+                self.settings.setValue(name, value)
+
+            if isinstance(obj, QCheckBox):
+                name = obj.objectName()
+                value = obj.isChecked()
                 self.settings.setValue(name, value)
 
     def closeEvent(self, event):

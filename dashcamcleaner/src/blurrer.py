@@ -1,13 +1,19 @@
 import os
-import subprocess
+from itertools import islice
 from shutil import which
-from tqdm import tqdm
 
 import cv2
-import imageio
 import numpy as np
 import torch
 from src.box import Box
+from src.video_utils import VideoReader, VideoWriter
+from tqdm import tqdm
+
+
+def batch_iter(iterable, batch_size):
+    iterator = iter(iterable)
+    while batch := list(islice(iterator, batch_size)):
+        yield batch
 
 
 class VideoBlurrer:
@@ -115,97 +121,37 @@ class VideoBlurrer:
         """
         # gather inputs from self.parameters
         input_path = self.parameters["input_path"]
-        temp_output = f"{os.path.splitext(self.parameters['output_path'])[0]}_copy{os.path.splitext(self.parameters['output_path'])[1]}"
         output_path = self.parameters["output_path"]
         threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
         batch_size = self.parameters["batch_size"]
+        stabilize = self.parameters["stabilize"]
 
         # customize detector
         self.detector.conf = threshold
 
         # open video file
-        with imageio.get_reader(input_path) as reader:
+        with VideoReader(input_path, stabilize) as reader:
 
             # get the height and width of each frame for future debug outputs on frame
-            meta = reader.get_meta_data()
-            fps = meta["fps"]
-            duration = meta["duration"]
-            length = int(duration * fps)
-            audio_present = "audio_codec" in meta
+            meta = reader.get_metadata()
+            print(meta)
 
             # save the video to a file
-            with imageio.get_writer(
-                temp_output, codec="libx264", fps=fps, quality=quality
+            with VideoWriter(
+                output_path, input_path, meta["fps"], meta["width"], meta["height"], quality
             ) as writer:
 
                 with tqdm(
-                    total=length, desc="Processing video", unit="frames", dynamic_ncols=True
+                    total=meta["frames"], desc="Processing video", unit="frames", dynamic_ncols=True
                 ) as progress_bar:
-                    buffer = []
 
-                    for frame_read in reader:
-                        rgb_frame = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
-                        if len(buffer) < batch_size:
-                            buffer.append(rgb_frame)
-                        else:
-                            # buffer is full - detect information for all images in buffer
-                            new_detections = self.detect_identifiable_information(buffer)
-                            for frame, detections in zip(buffer, new_detections):
-                                frame = self.apply_blur(frame, detections)
-                                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                                writer.append_data(frame_rgb)
-                            progress_bar.update(len(buffer))
-                            buffer = [rgb_frame]
-
-                    # Detect information for the rest of the buffer
-                    new_detections = self.detect_identifiable_information(buffer)
-                    for frame, detections in zip(buffer, new_detections):
-                        frame = self.apply_blur(frame, detections)
-                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        writer.append_data(frame_rgb)
-                    progress_bar.update(len(buffer))
-
-        # copy over audio stream from original video to edited video
-        if is_installed("ffmpeg"):
-            ffmpeg_exe = "ffmpeg"
-        else:
-            ffmpeg_exe = os.getenv("FFMPEG_BINARY")
-            if not ffmpeg_exe:
-                print(
-                    "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the envirnment variable 'FFMPEG_BINARY'."
-                )
-                return
-
-        if audio_present:
-            subprocess.run(
-                [
-                    ffmpeg_exe,
-                    "-y",
-                    "-i",
-                    temp_output,
-                    "-i",
-                    input_path,
-                    "-c",
-                    "copy",
-                    "-map",
-                    "0:0",
-                    "-map",
-                    "1:1",
-                    "-shortest",
-                    output_path,
-                ],
-                stdout=subprocess.DEVNULL,
-            )
-            # delete temporary output that had no audio track
-            try:
-                os.remove(temp_output)
-            except Exception as e:
-                self.alert.emit(
-                    f"Could not delete temporary, muted video. Maybe another process (like a cloud storage service or antivirus) is using it already.\n{str(e)}"
-                )
-        else:
-            os.rename(temp_output, output_path)
+                    for batch in batch_iter(reader, batch_size):
+                        new_detections = self.detect_identifiable_information(batch)
+                        for frame, detections in zip(batch, new_detections):
+                            frame = self.apply_blur(frame, detections)
+                            writer.write_frame(frame)
+                        progress_bar.update(len(batch))
 
 
 def setup_detector(weights_path: str):
@@ -216,11 +162,13 @@ def setup_detector(weights_path: str):
     """
     model = torch.hub.load("ultralytics/yolov5", "custom", weights_path, _verbose=False)
     if torch.cuda.is_available():
-        print(f"Using {torch.cuda.get_device_name(torch.cuda.current_device())}.")
+        print(
+            f"Using {torch.cuda.get_device_name(torch.cuda.current_device())} with {weights_path}."
+        )
         model.cuda()
         torch.backends.cudnn.benchmark = True
     else:
-        print("Using CPU.")
+        print(f"Using CPU with {weights_path}.")
     return model
 
 
