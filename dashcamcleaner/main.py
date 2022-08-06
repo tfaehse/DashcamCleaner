@@ -6,18 +6,11 @@ from glob import glob
 
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
-    QApplication,
-    QComboBox,
-    QDoubleSpinBox,
-    QFileDialog,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QRadioButton,
-    QSpinBox,
+    QApplication, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit,
+    QMainWindow, QMessageBox, QRadioButton, QSpinBox
 )
-from src.ui_mainwindow import Ui_MainWindow
 from src.qt_wrapper import qtVideoBlurWrapper
+from src.ui_mainwindow import Ui_MainWindow
 
 
 class MainWindow(QMainWindow):

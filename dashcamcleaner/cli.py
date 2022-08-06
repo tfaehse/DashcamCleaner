@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import signal
 import argparse
+import signal
+
 from src.blurrer import VideoBlurrer
 
 # makes it possible to interrupt while running in other thread
