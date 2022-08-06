@@ -12,6 +12,14 @@ from src.detection import Detection
 from tqdm import tqdm
 
 
+def batches(iterable, batch_size: int = 1):
+    # https://stackoverflow.com/a/8290508/10314791
+
+    length = len(iterable)
+    for ndx in range(0, length, batch_size):
+        yield iterable[ndx:min(ndx + batch_size, length)]
+
+
 class VideoBlurrer:
     detections: List[Detection]
 
@@ -149,29 +157,14 @@ class VideoBlurrer:
                 with tqdm(
                     total=length, desc="Processing video", unit="frames", dynamic_ncols=True
                 ) as progress_bar:
-                    frame_buffer = []
-
-                    for frame_read in reader:
-                        rgb_frame = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
-                        if len(frame_buffer) < batch_size:
-                            frame_buffer.append(rgb_frame)
-                        else:
-                            # buffer is full - detect information for all images in buffer
-                            new_detections = self.detect_identifiable_information(frame_buffer)
-                            for frame, detections in zip(frame_buffer, new_detections):
-                                frame_blurred = self.apply_blur(frame, detections)
-                                frame_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
-                                writer.append_data(frame_rgb)
-                            progress_bar.update(len(frame_buffer))
-                            frame_buffer = [rgb_frame]
-
-                    # Detect information for the rest of the buffer
-                    new_detections = self.detect_identifiable_information(frame_buffer)
-                    for frame, detections in zip(frame_buffer, new_detections):
-                        frame = self.apply_blur(frame, detections)
-                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        writer.append_data(frame_rgb)
-                    progress_bar.update(len(frame_buffer))
+                    for frame_batch in batches(reader, batch_size):
+                        frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
+                        new_detections = self.detect_identifiable_information(frame_buffer)
+                        for frame, detections in zip(frame_buffer, new_detections):
+                            frame_blurred = self.apply_blur(frame, detections)
+                            frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
+                            writer.append_data(frame_blurred_rgb)
+                        progress_bar.update(len(frame_buffer))
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):
