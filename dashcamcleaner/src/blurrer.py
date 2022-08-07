@@ -158,7 +158,7 @@ class VideoBlurrer:
                             frame_blurred = self.apply_blur(frame, detections)
                             frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
                             writer.append_data(frame_blurred_rgb)
-                            progress_bar.update()
+                        progress_bar.update(len(frame_buffer))
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):
@@ -167,7 +167,7 @@ class VideoBlurrer:
             ffmpeg_exe = os.getenv("FFMPEG_BINARY")
             if not ffmpeg_exe:
                 print(
-                    "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the envirnment variable 'FFMPEG_BINARY'."
+                    "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the environment variable 'FFMPEG_BINARY'."
                 )
                 return
 
