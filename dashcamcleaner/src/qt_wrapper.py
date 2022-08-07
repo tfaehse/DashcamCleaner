@@ -10,37 +10,21 @@ from PySide6.QtCore import QThread, Signal
 from src.blurrer import VideoBlurrer
 
 
-class qtVideoBlurWrapper(QThread):
+class qtVideoBlurWrapper(QThread, VideoBlurrer):
     setMaximum = Signal(int)
     updateProgress = Signal(int)
     alert = Signal(str)
 
-    def __init__(self, weights_name, parameters=None):
+    def __init__(self, weights_name, parameters):
         """
         Constructor
         :param weights_name: file name of the weights to be used
         :param parameters: all relevant paremeters for the blurring process
         """
-        super(qtVideoBlurWrapper, self).__init__()
-        self.blurrer = VideoBlurrer(weights_name, parameters)
+        QThread.__init__(self)
+        VideoBlurrer.__init__(self, weights_name, parameters)
         self.result = {"success": False, "elapsed_time": 0}
-
-    def apply_blur(self, frame: np.array, new_detections: list):
-        """
-        Apply Gaussian blur to regions of interests
-        :param frame: input image
-        :param new_detections: list of newly detected faces and plates
-        :return: processed image
-        """
-        return self.blurrer.apply_blur(frame, new_detections)
-
-    def detect_identifiable_information(self, image: np.array):
-        """
-        Run plate and face detection on an input image
-        :param image: input image
-        :return: detected faces and plates
-        """
-        return self.blurrer.detect_identifiable_information(image)
+        self._abort = False
 
     def run(self):
         """
@@ -52,15 +36,15 @@ class qtVideoBlurWrapper(QThread):
         start = timer()
 
         # gather inputs from self.parameters
-        input_path = self.blurrer.parameters["input_path"]
-        temp_output = f"{os.path.splitext(self.blurrer.parameters['output_path'])[0]}_copy{os.path.splitext(self.blurrer.parameters['output_path'])[1]}"
-        output_path = self.blurrer.parameters["output_path"]
-        threshold = self.blurrer.parameters["threshold"]
-        quality = self.blurrer.parameters["quality"]
-        batch_size = self.blurrer.parameters["batch_size"]
+        input_path = self.parameters["input_path"]
+        temp_output = f"{os.path.splitext(self.parameters['output_path'])[0]}_copy{os.path.splitext(self.parameters['output_path'])[1]}"
+        output_path = self.parameters["output_path"]
+        threshold = self.parameters["threshold"]
+        quality = self.parameters["quality"]
+        batch_size = self.parameters["batch_size"]
 
         # customize detector
-        self.blurrer.detector.conf = threshold
+        self.detector.conf = threshold
 
         # open video file
         with imageio.get_reader(input_path) as reader:
