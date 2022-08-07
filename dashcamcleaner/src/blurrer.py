@@ -48,7 +48,7 @@ class VideoBlurrer:
 
         # gather and process all currently relevant detections
         self.detections = [
-            x.get_older() for x in self.detections if x.age <= blur_memory
+            x.get_older() for x in self.detections if x.age < blur_memory
         ]  # throw out outdated detections, increase age by 1
         for detection in new_detections:
             if no_faces and detection.kind == "face":

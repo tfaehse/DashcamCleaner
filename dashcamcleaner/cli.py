@@ -137,8 +137,9 @@ def parse_arguments():
         required=False,
         help="blur objects in the last x frames too",
         type=int,
-        default=0,
         metavar="[0-5]",
+        choices=range(5 + 1),
+        default=0,
     )
     optional.add_argument(
         "-nf",
