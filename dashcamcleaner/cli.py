@@ -2,6 +2,7 @@
 
 import argparse
 import signal
+from typing import Dict, Union
 
 from src.blurrer import VideoBlurrer
 
@@ -18,14 +19,11 @@ class CLI:
         # dump parameters
         print(vars(opt))
 
-        # setup blurrer
-        self.blurrer = VideoBlurrer(self.opt.weights)
-
         # read inference size
         inference_size = int(self.opt.inference_size) * 16 / 9  # ouch again
 
         # set up parameters
-        parameters = {
+        parameters: Dict[str, Union[bool, int, float, str]] = {
             "input_path": self.opt.input,
             "output_path": self.opt.output,
             "blur_size": self.opt.blur_size,
@@ -37,8 +35,11 @@ class CLI:
             "batch_size": self.opt.batch_size,
             "no_faces": self.opt.no_faces,
         }
+
+        # setup blurrer
+        self.blurrer = VideoBlurrer(self.opt.weights, parameters)
+
         if self.blurrer:
-            self.blurrer.parameters = parameters
             self.blurrer.blur_video()
         else:
             print("No blurrer object!")

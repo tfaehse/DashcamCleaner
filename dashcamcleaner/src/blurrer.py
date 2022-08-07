@@ -1,29 +1,23 @@
 import os
 import subprocess
 from shutil import which
-from typing import List
+from typing import Dict, List, Union
 
 import cv2
 import imageio
 import numpy as np
 import torch
+from more_itertools import chunked
 from src.bounds import Bounds
 from src.detection import Detection
 from tqdm import tqdm
 
 
-def batches(iterable, batch_size: int = 1):
-    # https://stackoverflow.com/a/8290508/10314791
-
-    length = len(iterable)
-    for ndx in range(0, length, batch_size):
-        yield iterable[ndx:min(ndx + batch_size, length)]
-
-
 class VideoBlurrer:
+    parameters: Dict[str, Union[bool, int, float, str]]
     detections: List[Detection]
 
-    def __init__(self, weights_name, parameters=None):
+    def __init__(self: 'VideoBlurrer', weights_name: str, parameters: Dict[str, Union[bool, int, float, str]]) -> None:
         """
         Constructor
         :param weights_name: file name of the weights to be used
@@ -39,7 +33,7 @@ class VideoBlurrer:
         self.detector = setup_detector(weights_path)
         print("Worker created")
 
-    def apply_blur(self, frame: np.array, new_detections: List[Detection]):
+    def apply_blur(self: 'VideoBlurrer', frame: np.array, new_detections: List[Detection]):
         """
         Apply Gaussian blur to regions of interests
         :param frame: input image
@@ -99,7 +93,7 @@ class VideoBlurrer:
         blurred = cv2.bitwise_and(temp, temp, mask=mask)
         return cv2.add(background, blurred)
 
-    def detect_identifiable_information(self, images: list) -> List[List[Detection]]:
+    def detect_identifiable_information(self: 'VideoBlurrer', images: list) -> List[List[Detection]]:
         """
         Run plate and face detection on an input image
         :param images: input images
@@ -157,7 +151,7 @@ class VideoBlurrer:
                 with tqdm(
                     total=length, desc="Processing video", unit="frames", dynamic_ncols=True
                 ) as progress_bar:
-                    for frame_batch in batches(reader, batch_size):
+                    for frame_batch in chunked(reader, batch_size):
                         frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
                         new_detections: List[List[Detection]] = self.detect_identifiable_information(frame_buffer)
                         for frame, detections in zip(frame_buffer, new_detections):
