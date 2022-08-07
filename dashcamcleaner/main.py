@@ -28,12 +28,12 @@ class MainWindow(QMainWindow):
         self.receive_attempts = 0
         save_path = os.path.join(os.path.dirname(__file__), "gui.ini")
         self.settings = QSettings(save_path, QSettings.IniFormat)
-        self.blur_wrapper = None
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.restore()
         self.load_weights_options()
+        self.blur_wrapper = self.setup_blurrer()
         self.ui.button_source.clicked.connect(self.button_source_clicked)
         self.ui.button_start.clicked.connect(self.button_start_clicked)
         self.ui.button_target.clicked.connect(self.button_target_clicked)
@@ -46,21 +46,22 @@ class MainWindow(QMainWindow):
         for net_path in glob(source_folder + "/weights/*.pt"):
             clean_name = os.path.splitext(os.path.basename(net_path))[0]
             self.ui.combo_box_weights.addItem(clean_name)
-        self.setup_blurrer()
 
     def setup_blurrer(self):
         """
         Create and connect a blurrer thread
         """
         weights_name = self.ui.combo_box_weights.currentText()
-        self.blur_wrapper = qtVideoBlurWrapper(weights_name)
-        self.blur_wrapper.setMaximum.connect(self.setMaximumValue)
-        self.blur_wrapper.updateProgress.connect(self.setProgress)
-        self.blur_wrapper.finished.connect(self.blur_wrapper_finished)
-        self.blur_wrapper.alert.connect(self.blur_wrapper_alert)
+        init_params = self.aggregate_parameters()
+        blur_wrapper = qtVideoBlurWrapper(weights_name, init_params)
+        blur_wrapper.setMaximum.connect(self.setMaximumValue)
+        blur_wrapper.updateProgress.connect(self.setProgress)
+        blur_wrapper.finished.connect(self.blur_wrapper_finished)
+        blur_wrapper.alert.connect(self.blur_wrapper_alert)
         msg_box = QMessageBox()
         msg_box.setText(f"Successfully loaded {weights_name}.pt")
         msg_box.exec()
+        return blur_wrapper
 
     def blur_wrapper_alert(self, message: str):
         """
@@ -95,19 +96,9 @@ class MainWindow(QMainWindow):
         """
         self.ui.progress.setMaximum(value)
 
-    def button_start_clicked(self):
-        """
-        Callback for button_start
-        """
-
-        self.ui.button_abort.setEnabled(True)
-        self.ui.button_start.setEnabled(False)
-
-        # read inference size
-        inference_size = int(self.ui.combo_box_scale.currentText()[:-1]) * 16 / 9  # ouch again
-
-        # set up parameters
-        parameters = {
+    def aggregate_parameters(self):
+        inference_size = int(self.ui.combo_box_scale.currentText()[:-1]) * 16 / 9
+        return {
             "input_path": self.ui.line_source.text(),
             "output_path": self.ui.line_target.text(),
             "blur_size": self.ui.spin_blur.value(),
@@ -119,8 +110,19 @@ class MainWindow(QMainWindow):
             "batch_size": self.ui.spin_batch.value(),
             "no_faces": False,
         }
+
+    def button_start_clicked(self):
+        """
+        Callback for button_start
+        """
+
+        self.ui.button_abort.setEnabled(True)
+        self.ui.button_start.setEnabled(False)
+
+        # set up parameters
+        parameters = self.aggregate_parameters()
         if self.blur_wrapper:
-            self.blur_wrapper.blurrer.parameters = parameters
+            self.blur_wrapper.parameters = parameters
             self.blur_wrapper.start()
         else:
             print("No blurrer object!")

@@ -11,7 +11,7 @@ from src.box import Box
 
 
 class VideoBlurrer:
-    def __init__(self, weights_name, parameters=None):
+    def __init__(self, weights_name, parameters):
         """
         Constructor
         :param weights_name: file name of the weights to be used
