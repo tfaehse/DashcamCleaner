@@ -13,7 +13,6 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 class CLI:
     def __init__(self, opt):
         self.opt = opt
-        self.blurrer = None
 
     def start_blurring(self):
         # dump parameters
@@ -37,12 +36,9 @@ class CLI:
         }
 
         # setup blurrer
-        self.blurrer = VideoBlurrer(self.opt.weights, parameters)
+        blurrer = VideoBlurrer(self.opt.weights, parameters)
+        blurrer.blur_video()
 
-        if self.blurrer:
-            self.blurrer.blur_video()
-        else:
-            print("No blurrer object!")
         print("Video blurred successfully.")
 
 
