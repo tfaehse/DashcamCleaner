@@ -11,14 +11,10 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 class CLI:
     def __init__(self, opt):
         self.opt = opt
-        self.blurrer = None
 
     def start_blurring(self):
         # dump parameters
         print(vars(opt))
-
-        # setup blurrer
-        self.blurrer = VideoBlurrer(self.opt.weights)
 
         # read inference size
         inference_size = int(self.opt.inference_size) * 16 / 9  # ouch again
@@ -36,11 +32,11 @@ class CLI:
             "batch_size": self.opt.batch_size,
             "no_faces": self.opt.no_faces,
         }
-        if self.blurrer:
-            self.blurrer.parameters = parameters
-            self.blurrer.blur_video()
-        else:
-            print("No blurrer object!")
+
+        # setup blurrer
+        blurrer = VideoBlurrer(self.opt.weights, parameters)
+        blurrer.blur_video()
+
         print("Video blurred successfully.")
 
 
