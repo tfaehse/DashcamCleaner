@@ -1,7 +1,13 @@
 from math import floor, sqrt
+from typing import Tuple
 
 
 class Bounds:
+    x_min: int
+    y_min: int
+    x_max: int
+    y_max: int
+
     def __init__(self: 'Bounds', x_min: int, y_min: int, x_max: int, y_max: int):
         self.x_min = int(x_min)
         self.y_min = int(y_min)
@@ -15,7 +21,7 @@ class Bounds:
         """
         return slice(int(self.y_min), int(self.y_max)), slice(int(self.x_min), int(self.x_max))
 
-    def ellipse_coordinates(self):
+    def ellipse_coordinates(self: 'Bounds') -> Tuple[Tuple[int, int], Tuple[int, int]]:
         """
         Calculate elliptic coordinates for the box
         :return: position + radii
@@ -23,6 +29,12 @@ class Bounds:
         center_pos = (int((self.x_max + self.x_min) / 2), int((self.y_max + self.y_min) / 2))
         axis_length = (int((self.x_max - self.x_min) / 2), int((self.y_max - self.y_min) / 2))
         return center_pos, axis_length
+
+    def pt1(self: 'Bounds') -> Tuple[int, int]:
+        return (self.x_max, self.y_max)
+
+    def pt2(self: 'Bounds') -> Tuple[int, int]:
+        return (self.x_min, self.y_min)
 
     def scale(self: 'Bounds', shape, multiplier):
         """
@@ -49,8 +61,8 @@ class Bounds:
         )
         return scaled_detection
 
-    def __repr__(self):
-        return f"Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max})"
+    def __repr__(self: 'Bounds') -> str:
+        return f"Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}, xs={self.x_max-self.x_min}, ys={self.y_max-self.y_min})"
 
     def __eq__(self: 'Bounds', other):
         if isinstance(other, Bounds):

@@ -50,6 +50,7 @@ class VideoBlurrer:
         self.detections = [
             x.get_older() for x in self.detections if x.age < blur_memory
         ]  # throw out outdated detections, increase age by 1
+
         for detection in new_detections:
             if no_faces and detection.kind == "face":
                 continue
@@ -57,40 +58,48 @@ class VideoBlurrer:
             scaled_detection.age = 0
             self.detections.append(scaled_detection)
 
-        # prepare copy and mask
-        temp = frame.copy()
-        mask = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
+        if len(self.detections) < 1:
+            # there are no detections for this frame, leave early and return the same input-frame
+            return frame
 
+        # prepare copy and mask
+        blur_1 = cv2.blur(frame, (blur_size, blur_size))
+        # blurring again with the same kernel is the same as blurring with a kernel twice as big (but should be faster)
+        blur_2 = cv2.blur(blur_1, (blur_size, blur_size))
+
+        mask_blur_1 = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
+        mask_blur_2 = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
+
+        inner_factor = 0.8
         for detection in self.detections:
             # two-fold blurring: softer blur on the edge of the box to look smoother and less abrupt
             outer_box = detection.bounds
-            inner_box = detection.bounds.scale(frame.shape, 0.8)
+            inner_box = detection.bounds.scale(frame.shape, inner_factor)
 
             if detection.kind == "plate":
-                # blur in-place on frame
-                frame[outer_box.coords_as_slices()] = cv2.blur(
-                    frame[outer_box.coords_as_slices()], (blur_size, blur_size)
-                )
-                frame[inner_box.coords_as_slices()] = cv2.blur(
-                    frame[inner_box.coords_as_slices()], (blur_size * 2 + 1, blur_size * 2 + 1)
-                )
-
+                cv2.rectangle(mask_blur_1, outer_box.pt1(), outer_box.pt2(), color=(255, 255, 255), thickness=-1)
+                cv2.rectangle(mask_blur_2, inner_box.pt1(), inner_box.pt2(), color=(255, 255, 255), thickness=-1)
             elif detection.kind == "face":
-                center, axes = detection.bounds.ellipse_coordinates()
-                # blur rectangle around face
-                temp[outer_box.coords_as_slices()] = cv2.blur(
-                    temp[outer_box.coords_as_slices()], (blur_size * 2 + 1, blur_size * 2 + 1)
-                )
+                center_outer, axes_outer = outer_box.ellipse_coordinates()
+                center_inner, axes_inner = inner_box.ellipse_coordinates()
                 # add ellipse to mask
-                cv2.ellipse(mask, center, axes, 0, 0, 360, (255, 255, 255), -1)
-
+                cv2.ellipse(mask_blur_1, center_inner, axes_outer, 0, 0, 360, (255, 255, 255), -1)
+                cv2.ellipse(mask_blur_2, center_outer, axes_inner, 0, 0, 360, (255, 255, 255), -1)
             else:
                 raise ValueError(f"Detection kind not supported: {detection.kind}")
 
-        # apply mask to blur faces too
-        mask_inverted = cv2.bitwise_not(mask)
-        background = cv2.bitwise_and(frame, frame, mask=mask_inverted)
-        blurred = cv2.bitwise_and(temp, temp, mask=mask)
+        # apply mask to blur
+        mask_background = cv2.bitwise_not(cv2.bitwise_or(mask_blur_1, mask_blur_2))
+
+        # remove second blur-mask from first blur-mask,
+        # so as not to add the second (smaller) blur mask twice to the output
+        # https://en.wikipedia.org/wiki/Material_nonimplication
+        mask_blur_1 = cv2.bitwise_and(mask_blur_1, cv2.bitwise_not(mask_blur_2))
+
+        background = cv2.bitwise_and(frame, frame, mask=mask_background)
+        blurred_1 = cv2.bitwise_and(blur_1, blur_1, mask=mask_blur_1)
+        blurred_2 = cv2.bitwise_and(blur_2, blur_2, mask=mask_blur_2)
+        blurred = cv2.add(blurred_1, blurred_2)
         return cv2.add(background, blurred)
 
     def detect_identifiable_information(self: 'VideoBlurrer', images: list) -> List[List[Detection]]:
