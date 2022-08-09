@@ -2,7 +2,7 @@ import os
 import subprocess
 from shutil import which
 from typing import Dict, List, Union
-
+from math import sqrt
 import cv2
 import imageio
 import numpy as np
@@ -41,7 +41,7 @@ class VideoBlurrer:
         :return: processed image
         """
         # gather inputs from self.parameters
-        blur_size = self.parameters["blur_size"]
+        blur_size = self.parameters["blur_size"] * 2 + 1  # must be odd
         blur_memory = self.parameters["blur_memory"]
         roi_multi = self.parameters["roi_multi"]
         no_faces = self.parameters["no_faces"]
@@ -63,9 +63,19 @@ class VideoBlurrer:
             return frame
 
         # prepare copy and mask
-        blur_1 = cv2.blur(frame, (blur_size, blur_size))
-        # blurring again with the same kernel is the same as blurring with a kernel twice as big (but should be faster)
-        blur_2 = cv2.blur(blur_1, (blur_size, blur_size))
+        blur_1 = cv2.GaussianBlur(frame, (blur_size, blur_size), 0)
+        # blurring again with the same kernel is the same as blurring with a kernel sqrt(2) as big (but should be faster)
+        # the variance of a kernel with size N is N^2
+        # the variance of a kernel with size 2*N is 4*N^2
+        # so the necessary variance to add on-top is 3 * N^2, whose root is sqrt(3) * N
+        # which is why the size of the second blur is sqrt(3) * N to get double the gaussion blur size
+        # but with a smaller kernel, since we already have a blurred image with kernel size=N usable as input
+        #
+        # from Wikipedia https://en.wikipedia.org/wiki/Gaussian_blur:
+        # > Applying successive Gaussian blurs to an image has the same effect as applying a single, larger Gaussian blur,
+        # whose radius is the square root of the sum of the squares of the blur radii that were actually applied.
+        second_blur_size = (blur_size * sqrt(3)) // 2 * 2 + 1  # has to be odd for the Gaussian blur, so ceil or floor are not usable
+        blur_2 = cv2.GaussianBlur(blur_1, (second_blur_size, second_blur_size), 0)
 
         mask_blur_1 = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
         mask_blur_2 = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
