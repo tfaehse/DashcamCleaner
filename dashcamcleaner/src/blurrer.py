@@ -74,7 +74,7 @@ class VideoBlurrer:
         # from Wikipedia https://en.wikipedia.org/wiki/Gaussian_blur:
         # > Applying successive Gaussian blurs to an image has the same effect as applying a single, larger Gaussian blur,
         # whose radius is the square root of the sum of the squares of the blur radii that were actually applied.
-        second_blur_size = (blur_size * sqrt(3)) // 2 * 2 + 1  # has to be odd for the Gaussian blur, so ceil or floor are not usable
+        second_blur_size = int((blur_size * sqrt(3)) // 2 * 2 + 1)  # has to be odd for the Gaussian blur, so ceil or floor are not usable
         blur_2 = cv2.GaussianBlur(blur_1, (second_blur_size, second_blur_size), 0)
 
         mask_blur_1 = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
