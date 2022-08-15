@@ -1,8 +1,9 @@
 import os
 import subprocess
+from math import sqrt
 from shutil import which
 from typing import Dict, List, Union
-from math import sqrt
+
 import cv2
 import imageio
 import numpy as np

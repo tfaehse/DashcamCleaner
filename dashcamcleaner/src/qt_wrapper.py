@@ -5,7 +5,6 @@ from timeit import default_timer as timer
 
 import cv2
 import imageio
-import numpy as np
 from PySide6.QtCore import QThread, Signal
 from src.blurrer import VideoBlurrer
 

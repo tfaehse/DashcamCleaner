@@ -61,8 +61,8 @@ class Bounds:
         )
         return scaled_detection
 
-    def __repr__(self: 'Bounds') -> str:
-        return f"Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}, xs={self.x_max-self.x_min}, ys={self.y_max-self.y_min})"
+    def __repr__(self):
+        return f"Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max})"
 
     def __eq__(self: 'Bounds', other):
         if isinstance(other, Bounds):
