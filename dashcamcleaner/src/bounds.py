@@ -1,14 +1,12 @@
 from math import floor, sqrt
 
 
-class Box:
-    def __init__(self, x_min, y_min, x_max, y_max, score, kind):
+class Bounds:
+    def __init__(self: 'Bounds', x_min: int, y_min: int, x_max: int, y_max: int):
         self.x_min = int(x_min)
         self.y_min = int(y_min)
         self.x_max = int(x_max)
         self.y_max = int(y_max)
-        self.score = float(score)
-        self.kind = str(kind)
 
     def coords_as_slices(self):
         """
@@ -26,7 +24,7 @@ class Box:
         axis_length = (int((self.x_max - self.x_min) / 2), int((self.y_max - self.y_min) / 2))
         return center_pos, axis_length
 
-    def scale(self, shape, multiplier):
+    def scale(self: 'Bounds', shape, multiplier):
         """
         Scales a bounding box by a size multiplier and while respecting image dimensions
         :param shape: shape of the image
@@ -43,27 +41,23 @@ class Box:
         x_max = self.x_max + ((sqrt(multiplier) - 1) * width) / 2
         y_min = self.y_min - ((sqrt(multiplier) - 1) * height) / 2
         y_max = self.y_max + ((sqrt(multiplier) - 1) * height) / 2
-        scaled_detection = Box(
+        scaled_detection = Bounds(
             max(floor(x_min), 0),
             max(floor(y_min), 0),
             min(floor(x_max), frame_width),
             min(floor(y_max), frame_height),
-            self.score,
-            self.kind,
         )
         return scaled_detection
 
     def __repr__(self):
-        return f"Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}, {self.score}, {self.kind})"
+        return f"Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max})"
 
-    def __eq__(self, other):
-        if isinstance(other, Box):
+    def __eq__(self: 'Bounds', other):
+        if isinstance(other, Bounds):
             return (
                 self.x_min == other.x_min
                 and self.y_min == other.y_min
                 and self.x_max == other.x_max
                 and self.y_max == other.y_max
-                and self.score == other.score
-                and self.kind == other.kind
             )
         return False

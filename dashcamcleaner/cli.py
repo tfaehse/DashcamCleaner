@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import signal
 import argparse
+import signal
+from typing import Dict, Union
+
 from src.blurrer import VideoBlurrer
 
 # makes it possible to interrupt while running in other thread
@@ -20,7 +22,7 @@ class CLI:
         inference_size = int(self.opt.inference_size) * 16 / 9  # ouch again
 
         # set up parameters
-        parameters = {
+        parameters: Dict[str, Union[bool, int, float, str]] = {
             "input_path": self.opt.input,
             "output_path": self.opt.output,
             "blur_size": self.opt.blur_size,
@@ -135,8 +137,9 @@ def parse_arguments():
         required=False,
         help="blur objects in the last x frames too",
         type=int,
-        default=0,
         metavar="[0-5]",
+        choices=range(5 + 1),
+        default=0,
     )
     optional.add_argument(
         "-nf",

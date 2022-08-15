@@ -1,17 +1,23 @@
 import os
 import subprocess
 from shutil import which
-from tqdm import tqdm
+from typing import Dict, List, Union
 
 import cv2
 import imageio
 import numpy as np
 import torch
-from src.box import Box
+from more_itertools import chunked
+from src.bounds import Bounds
+from src.detection import Detection
+from tqdm import tqdm
 
 
 class VideoBlurrer:
-    def __init__(self, weights_name, parameters):
+    parameters: Dict[str, Union[bool, int, float, str]]
+    detections: List[Detection]
+
+    def __init__(self: 'VideoBlurrer', weights_name: str, parameters: Dict[str, Union[bool, int, float, str]]) -> None:
         """
         Constructor
         :param weights_name: file name of the weights to be used
@@ -27,7 +33,7 @@ class VideoBlurrer:
         self.detector = setup_detector(weights_path)
         print("Worker created")
 
-    def apply_blur(self, frame: np.array, new_detections: list):
+    def apply_blur(self: 'VideoBlurrer', frame: np.array, new_detections: List[Detection]):
         """
         Apply Gaussian blur to regions of interests
         :param frame: input image
@@ -42,22 +48,23 @@ class VideoBlurrer:
 
         # gather and process all currently relevant detections
         self.detections = [
-            [x[0], x[1] + 1] for x in self.detections if x[1] <= blur_memory
+            x.get_older() for x in self.detections if x.age < blur_memory
         ]  # throw out outdated detections, increase age by 1
         for detection in new_detections:
             if no_faces and detection.kind == "face":
                 continue
-            scaled_detection = detection.scale(frame.shape, roi_multi)
-            self.detections.append([scaled_detection, 0])
+            scaled_detection = detection.get_scaled(frame.shape, roi_multi)
+            scaled_detection.age = 0
+            self.detections.append(scaled_detection)
 
         # prepare copy and mask
         temp = frame.copy()
         mask = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
 
-        for detection in [x[0] for x in self.detections]:
+        for detection in self.detections:
             # two-fold blurring: softer blur on the edge of the box to look smoother and less abrupt
-            outer_box = detection
-            inner_box = detection.scale(frame.shape, 0.8)
+            outer_box = detection.bounds
+            inner_box = detection.bounds.scale(frame.shape, 0.8)
 
             if detection.kind == "plate":
                 # blur in-place on frame
@@ -69,7 +76,7 @@ class VideoBlurrer:
                 )
 
             elif detection.kind == "face":
-                center, axes = detection.ellipse_coordinates()
+                center, axes = detection.bounds.ellipse_coordinates()
                 # blur rectangle around face
                 temp[outer_box.coords_as_slices()] = cv2.blur(
                     temp[outer_box.coords_as_slices()], (blur_size * 2 + 1, blur_size * 2 + 1)
@@ -86,7 +93,7 @@ class VideoBlurrer:
         blurred = cv2.bitwise_and(temp, temp, mask=mask)
         return cv2.add(background, blurred)
 
-    def detect_identifiable_information(self, images: list):
+    def detect_identifiable_information(self: 'VideoBlurrer', images: list) -> List[List[Detection]]:
         """
         Run plate and face detection on an input image
         :param images: input images
@@ -96,13 +103,15 @@ class VideoBlurrer:
         results_list = self.detector(images, size=scale).xyxy
         return [
             [
-                Box(
-                    det[0],
-                    det[1],
-                    det[2],
-                    det[3],
-                    det[4],
-                    "plate" if det[5].item() == 0 else "face",
+                Detection(
+                    Bounds(
+                        x_min=det[0],
+                        y_min=det[1],
+                        x_max=det[2],
+                        y_max=det[3]
+                    ),
+                    score=det[4],
+                    kind="plate" if det[5].item() == 0 else "face",
                 )
                 for det in tensor
             ]
@@ -142,29 +151,14 @@ class VideoBlurrer:
                 with tqdm(
                     total=length, desc="Processing video", unit="frames", dynamic_ncols=True
                 ) as progress_bar:
-                    buffer = []
-
-                    for frame_read in reader:
-                        rgb_frame = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
-                        if len(buffer) < batch_size:
-                            buffer.append(rgb_frame)
-                        else:
-                            # buffer is full - detect information for all images in buffer
-                            new_detections = self.detect_identifiable_information(buffer)
-                            for frame, detections in zip(buffer, new_detections):
-                                frame = self.apply_blur(frame, detections)
-                                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                                writer.append_data(frame_rgb)
-                            progress_bar.update(len(buffer))
-                            buffer = [rgb_frame]
-
-                    # Detect information for the rest of the buffer
-                    new_detections = self.detect_identifiable_information(buffer)
-                    for frame, detections in zip(buffer, new_detections):
-                        frame = self.apply_blur(frame, detections)
-                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        writer.append_data(frame_rgb)
-                    progress_bar.update(len(buffer))
+                    for frame_batch in chunked(reader, batch_size):
+                        frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
+                        new_detections: List[List[Detection]] = self.detect_identifiable_information(frame_buffer)
+                        for frame, detections in zip(frame_buffer, new_detections):
+                            frame_blurred = self.apply_blur(frame, detections)
+                            frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
+                            writer.append_data(frame_blurred_rgb)
+                        progress_bar.update(len(frame_buffer))
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):
@@ -173,7 +167,7 @@ class VideoBlurrer:
             ffmpeg_exe = os.getenv("FFMPEG_BINARY")
             if not ffmpeg_exe:
                 print(
-                    "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the envirnment variable 'FFMPEG_BINARY'."
+                    "FFMPEG could not be found! Please make sure the ffmpeg.exe is available under the environment variable 'FFMPEG_BINARY'."
                 )
                 return
 

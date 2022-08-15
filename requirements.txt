@@ -1,6 +1,7 @@
 imageio>=2.9.0
 imageio-ffmpeg>=0.4.5
 matplotlib>=3.2.2
+more_itertools>=8.7.0
 numpy>=1.18.5
 opencv-python>=4.1.2
 pandas>=1.2.3
