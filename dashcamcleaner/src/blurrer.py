@@ -47,6 +47,7 @@ class VideoBlurrer:
         roi_multi = self.parameters["roi_multi"]
         no_faces = self.parameters["no_faces"]
         feather_dilate_size = self.parameters["feather_edges"]
+        export_mask = self.parameters["export_mask"]
 
         # gather and process all currently relevant detections
         self.detections = [
@@ -67,11 +68,14 @@ class VideoBlurrer:
         # convert to float, since the mask needs to be in range [0, 1] and in float
         frame = np.float64(frame)
 
-        # prepare copy and mask
-        blur = cv2.GaussianBlur(frame, (blur_size, blur_size), 0)
+        # prepare mask
         blur_mask = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
         blur_mask_expanded = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
-        mask_color = (1, 1, 1)
+
+        if export_mask:
+            mask_color = (255, 255, 255)
+        else:
+            mask_color = (1, 1, 1)
 
         for detection in self.detections:
             bounds_list = [detection.bounds]
@@ -97,10 +101,14 @@ class VideoBlurrer:
             blur_mask_feathered = cv2.GaussianBlur(blur_mask_expanded, (feather_size, feather_size), 0)
             blur_mask = cv2.min(cv2.add(blur_mask, blur_mask_feathered), mask_color)  # do not oversaturate blurred regions, limit mask to max-value of 1 (for all three channels)
 
+        if export_mask:
+            return np.uint8(blur_mask)
+
         # to get the background, invert the blur_mask, i.e. 1 - mask on a matrix per-element level
         mask_background = cv2.subtract(np.full((frame.shape[0], frame.shape[1], 3), mask_color[0], dtype=np.float64), blur_mask)
 
         background = cv2.multiply(frame, mask_background)
+        blur = cv2.GaussianBlur(frame, (blur_size, blur_size), 0)
         blurred = cv2.multiply(blur, blur_mask)
         return np.uint8(cv2.add(background, blurred))
 

@@ -34,6 +34,7 @@ class CLI:
             "batch_size": self.opt.batch_size,
             "no_faces": self.opt.no_faces,
             "feather_edges": self.opt.feather_edges,
+            "export_mask": self.opt.export_mask,
         }
 
         # setup blurrer
@@ -157,7 +158,15 @@ def parse_arguments():
         "--no_faces",
         action="store_true",
         required=False,
-        help="Fo not censor faces.",
+        help="Do not censor faces.",
+        default=False,
+    )
+    optional.add_argument(
+        "-m",
+        "--export_mask",
+        action="store_true",
+        required=False,
+        help="Export a black and white only video of the blur-mask without applying it to the input clip.",
         default=False,
     )
     return parser.parse_args()

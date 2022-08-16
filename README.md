@@ -129,6 +129,8 @@ optional arguments:
                                         mask. expands mask by argument and blurs mask, so effective
                                         size is twice the argument.
   -nf, --no_faces                       Fo not censor faces.
+  -m, --export_mask                     Export a black and white only video of the blur-mask without
+                                        applying it to the input clip.
 ```
 For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.
 
