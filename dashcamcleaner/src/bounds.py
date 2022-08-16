@@ -36,7 +36,18 @@ class Bounds:
     def pt2(self: 'Bounds') -> Tuple[int, int]:
         return (self.x_min, self.y_min)
 
-    def scale(self: 'Bounds', shape, multiplier):
+    def expand(self: 'Bounds', shape, amount: int) -> 'Bounds':
+        frame_height, frame_width = shape[:2]
+
+        scaled_detection = Bounds(
+            max(self.x_min - amount, 0),
+            max(self.y_min - amount, 0),
+            min(self.x_max + amount, frame_width),
+            min(self.y_max + amount, frame_height),
+        )
+        return scaled_detection
+
+    def scale(self: 'Bounds', shape, multiplier) -> 'Bounds':
         """
         Scales a bounding box by a size multiplier and while respecting image dimensions
         :param shape: shape of the image

@@ -33,6 +33,7 @@ class CLI:
             "quality": self.opt.quality,
             "batch_size": self.opt.batch_size,
             "no_faces": self.opt.no_faces,
+            "feather_edges": self.opt.feather_edges,
         }
 
         # setup blurrer
@@ -60,12 +61,12 @@ def parse_arguments():
     )
 
     required = parser.add_argument_group("required arguments")
-    required.add_argument("-i", "--input", required=True, help="input video file path", type=str)
+    required.add_argument("-i", "--input", required=True, help="Input video file path.", type=str)
     required.add_argument(
         "-o",
         "--output",
         required=True,
-        help="output video file path",
+        help="Output video file path.",
         type=str,
     )
 
@@ -74,79 +75,89 @@ def parse_arguments():
         "-w",
         "--weights",
         required=False,
-        default="720p_medium_mosaic",
-        help="Weights file to use. See readme for the differences",
+        help="Weights file to use. See readme for the differences. (default = 720p_medium_mosaic).",
         type=str,
+        default="720p_medium_mosaic",
     )
     optional.add_argument(
         "-s",
         "--batch_size",
-        help="inference batch size - large values require a lof of memory and may cause crashes!",
+        help="Inference batch size - large values require a lof of memory and may cause crashes! Not recommended for CPU usage.",
         type=int,
+        metavar="[1, 1024] = 1",
         default=1,
-        metavar="[1,1024]",
     )
     optional.add_argument(
         "-b",
         "--blur_size",
         required=False,
-        help="granularity of the blurring filter",
+        help="Kernel radius of the gauss-filter.",
         type=int,
+        metavar="[1, 99] = 9",
         default=9,
-        metavar="[1-99]",
     )
     optional.add_argument(
         "-if",
         "--inference_size",
-        help="vertical inference size, e.g. 1080 or 720",
+        help="Vertical inference size, e.g. 1080 or 720.",
         type=int,
+        metavar="[144, 2160] = 720",
         default=720,
-        metavar="[144-2160]",
     )
     optional.add_argument(
         "-t",
         "--threshold",
         required=False,
-        help="detection threshold",
+        help="Detection threshold. Higher value means more certainty, lower value means more blurring.",
         type=float,
+        metavar="[0.0, 1.0] = 0.4",
         default=0.4,
-        metavar="[0-1]",
     )
     optional.add_argument(
         "-r",
         "--roi_multi",
         required=False,
-        help="increase/decrease area that will be blurred - 1 means no change",
+        help="Increase/decrease area that will be blurred - 1.0 means no change.",
         type=float,
+        metavar="[0.0, 2.0] = 1.0",
         default=1.0,
-        metavar="[0-2]",
     )
     optional.add_argument(
         "-q",
         "--quality",
-        metavar="[1, 10]",
         required=False,
-        help="quality of the resulting video. higher = better, default: 10. conversion to crf: ⌊(1-q/10)*51⌋",
+        help="Quality of the resulting video. higher = better. conversion to crf: ⌊(1-q/10)*51⌋.",
         type=float,
         choices=[round(x / 10, ndigits=2) for x in range(10, 101)],
+        metavar="[1.0, 10.0] = 10.0",
         default=10,
     )
     optional.add_argument(
         "-f",
         "--frame_memory",
         required=False,
-        help="blur objects in the last x frames too",
+        help="Blur objects in the last x frames too.",
         type=int,
-        metavar="[0-5]",
+        metavar="[0, 5] = 0",
         choices=range(5 + 1),
         default=0,
+    )
+    optional.add_argument(
+        "-fe",
+        "--feather_edges",
+        required=False,
+        help="Feather edges of blurred areas, removes sharp edges on blur-mask. expands mask by argument and blurs mask, so effective size is twice the argument.",
+        type=int,
+        metavar="[0, 99] = 5",
+        choices=range(99 + 1),
+        default=5,
     )
     optional.add_argument(
         "-nf",
         "--no_faces",
         action="store_true",
         required=False,
-        help="do not censor faces",
+        help="Fo not censor faces.",
         default=False,
     )
     return parser.parse_args()

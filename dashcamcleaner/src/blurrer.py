@@ -46,6 +46,7 @@ class VideoBlurrer:
         blur_memory = self.parameters["blur_memory"]
         roi_multi = self.parameters["roi_multi"]
         no_faces = self.parameters["no_faces"]
+        feather_dilate_size = self.parameters["feather_edges"]
 
         # gather and process all currently relevant detections
         self.detections = [
@@ -63,55 +64,45 @@ class VideoBlurrer:
             # there are no detections for this frame, leave early and return the same input-frame
             return frame
 
+        # convert to float, since the mask needs to be in range [0, 1] and in float
+        frame = np.float64(frame)
+
         # prepare copy and mask
-        blur_1 = cv2.GaussianBlur(frame, (blur_size, blur_size), 0)
-        # blurring again with the same kernel is the same as blurring with a kernel sqrt(2) as big (but should be faster)
-        # the variance of a kernel with size N is N^2
-        # the variance of a kernel with size 2*N is 4*N^2
-        # so the necessary variance to add on-top is 3 * N^2, whose root is sqrt(3) * N
-        # which is why the size of the second blur is sqrt(3) * N to get double the gaussion blur size
-        # but with a smaller kernel, since we already have a blurred image with kernel size=N usable as input
-        #
-        # from Wikipedia https://en.wikipedia.org/wiki/Gaussian_blur:
-        # > Applying successive Gaussian blurs to an image has the same effect as applying a single, larger Gaussian blur,
-        # whose radius is the square root of the sum of the squares of the blur radii that were actually applied.
-        second_blur_size = int((blur_size * sqrt(3)) // 2 * 2 + 1)  # has to be odd for the Gaussian blur, so ceil or floor are not usable
-        blur_2 = cv2.GaussianBlur(blur_1, (second_blur_size, second_blur_size), 0)
+        blur = cv2.GaussianBlur(frame, (blur_size, blur_size), 0)
+        blur_mask = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
+        blur_mask_expanded = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
+        mask_color = (1, 1, 1)
 
-        mask_blur_1 = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
-        mask_blur_2 = np.full((frame.shape[0], frame.shape[1], 1), 0, dtype=np.uint8)
-
-        inner_factor = 0.8
         for detection in self.detections:
-            # two-fold blurring: softer blur on the edge of the box to look smoother and less abrupt
-            outer_box = detection.bounds
-            inner_box = detection.bounds.scale(frame.shape, inner_factor)
+            bounds_list = [detection.bounds]
+            mask_list = [blur_mask]
+            if feather_dilate_size > 0:
+                bounds_list.append(detection.bounds.expand(frame.shape, feather_dilate_size))
+                mask_list.append(blur_mask_expanded)
 
-            if detection.kind == "plate":
-                cv2.rectangle(mask_blur_1, outer_box.pt1(), outer_box.pt2(), color=(255, 255, 255), thickness=-1)
-                cv2.rectangle(mask_blur_2, inner_box.pt1(), inner_box.pt2(), color=(255, 255, 255), thickness=-1)
-            elif detection.kind == "face":
-                center_outer, axes_outer = outer_box.ellipse_coordinates()
-                center_inner, axes_inner = inner_box.ellipse_coordinates()
-                # add ellipse to mask
-                cv2.ellipse(mask_blur_1, center_inner, axes_outer, 0, 0, 360, (255, 255, 255), -1)
-                cv2.ellipse(mask_blur_2, center_outer, axes_inner, 0, 0, 360, (255, 255, 255), -1)
-            else:
-                raise ValueError(f"Detection kind not supported: {detection.kind}")
+            for bounds, mask in zip(bounds_list, mask_list):
+                # add detection bounds to mask
+                if detection.kind == "plate":
+                    cv2.rectangle(mask, bounds.pt1(), bounds.pt2(), color=mask_color, thickness=-1)
+                elif detection.kind == "face":
+                    center, axes = bounds.ellipse_coordinates()
+                    # add ellipse to mask
+                    cv2.ellipse(mask, center, axes, 0, 0, 360, color=mask_color, thickness=-1)
+                else:
+                    raise ValueError(f"Detection kind not supported: {detection.kind}")
 
-        # apply mask to blur
-        mask_background = cv2.bitwise_not(cv2.bitwise_or(mask_blur_1, mask_blur_2))
+        if feather_dilate_size > 0:
+            # blur mask, to feather its edges
+            feather_size = (feather_dilate_size * 3) // 2 * 2 + 1
+            blur_mask_feathered = cv2.GaussianBlur(blur_mask_expanded, (feather_size, feather_size), 0)
+            blur_mask = cv2.min(cv2.add(blur_mask, blur_mask_feathered), mask_color)  # do not oversaturate blurred regions, limit mask to max-value of 1 (for all three channels)
 
-        # remove second blur-mask from first blur-mask,
-        # so as not to add the second (smaller) blur mask twice to the output
-        # https://en.wikipedia.org/wiki/Material_nonimplication
-        mask_blur_1 = cv2.bitwise_and(mask_blur_1, cv2.bitwise_not(mask_blur_2))
+        # to get the background, invert the blur_mask, i.e. 1 - mask on a matrix per-element level
+        mask_background = cv2.subtract(np.full((frame.shape[0], frame.shape[1], 3), mask_color[0], dtype=np.float64), blur_mask)
 
-        background = cv2.bitwise_and(frame, frame, mask=mask_background)
-        blurred_1 = cv2.bitwise_and(blur_1, blur_1, mask=mask_blur_1)
-        blurred_2 = cv2.bitwise_and(blur_2, blur_2, mask=mask_blur_2)
-        blurred = cv2.add(blurred_1, blurred_2)
-        return cv2.add(background, blurred)
+        background = cv2.multiply(frame, mask_background)
+        blurred = cv2.multiply(blur, blur_mask)
+        return np.uint8(cv2.add(background, blurred))
 
     def detect_identifiable_information(self: 'VideoBlurrer', images: list) -> List[List[Detection]]:
         """
