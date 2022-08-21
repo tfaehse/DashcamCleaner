@@ -6,6 +6,7 @@ from timeit import default_timer as timer
 import cv2
 import imageio
 from PySide6.QtCore import QThread, Signal
+from more_itertools import chunked
 from src.blurrer import VideoBlurrer
 
 
@@ -66,29 +67,15 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
                 buffer = []
                 current_frame = 0
 
-                for frame_read in reader:
-                    rgb_frame = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
-                    if len(buffer) < batch_size:
-                        buffer.append(rgb_frame)
-                    else:
-                        # buffer is full - detect information for all images in buffer
-                        new_detections = self.detect_identifiable_information(buffer)
-                        for frame, detections in zip(buffer, new_detections):
-                            frame = self.apply_blur(frame, detections)
-                            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                            writer.append_data(frame_rgb)
-                        current_frame += len(buffer)
-                        self.updateProgress.emit(current_frame)
-                        buffer = [rgb_frame]
-
-                # Detect information for the rest of the buffer
-                new_detections = self.detect_identifiable_information(buffer)
-                for frame, detections in zip(buffer, new_detections):
-                    frame = self.apply_blur(frame, detections)
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    writer.append_data(frame_rgb)
-                current_frame += len(buffer)
-                self.updateProgress.emit(current_frame)
+                for frame_batch in chunked(reader, batch_size):
+                    frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
+                    new_detections = self.detect_identifiable_information(frame_buffer)
+                    for frame, detections in zip(frame_buffer, new_detections):
+                        frame_blurred = self.apply_blur(frame, detections)
+                        frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
+                        writer.append_data(frame_blurred_rgb)
+                        current_frame += 1
+                    self.updateProgress.emit(current_frame)
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):

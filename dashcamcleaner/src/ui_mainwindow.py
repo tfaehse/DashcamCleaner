@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
+
 ################################################################################
 ## Form generated from reading UI file 'mainwindow.ui'
 ##
@@ -8,27 +9,23 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import (
-    QCoreApplication, QDate, QDateTime, QLocale, QMetaObject, QObject, QPoint,
-    QRect, QSize, Qt, QTime, QUrl
-)
-from PySide6.QtGui import (
-    QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QGradient,
-    QIcon, QImage, QKeySequence, QLinearGradient, QPainter, QPalette, QPixmap,
-    QRadialGradient, QTransform
-)
-from PySide6.QtWidgets import (
-    QApplication, QComboBox, QDoubleSpinBox, QFrame, QHBoxLayout, QLabel,
-    QLineEdit, QMainWindow, QProgressBar, QPushButton, QSizePolicy,
-    QSpacerItem, QSpinBox, QVBoxLayout, QWidget
-)
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QComboBox, QDoubleSpinBox, QFrame,
+    QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+    QProgressBar, QPushButton, QSizePolicy, QSpacerItem,
+    QSpinBox, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(687, 263)
+        MainWindow.resize(842, 263)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -97,6 +94,17 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.spin_blur)
 
+        self.label_9 = QLabel(self.centralwidget)
+        self.label_9.setObjectName(u"label_9")
+
+        self.horizontalLayout_3.addWidget(self.label_9)
+
+        self.spin_feather_edges = QSpinBox(self.centralwidget)
+        self.spin_feather_edges.setObjectName(u"spin_feather_edges")
+        self.spin_feather_edges.setValue(1)
+
+        self.horizontalLayout_3.addWidget(self.spin_feather_edges)
+
         self.label_5 = QLabel(self.centralwidget)
         self.label_5.setObjectName(u"label_5")
 
@@ -123,6 +131,10 @@ class Ui_MainWindow(object):
         self.double_spin_roimulti.setValue(1.000000000000000)
 
         self.horizontalLayout_3.addWidget(self.double_spin_roimulti)
+
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_3.addItem(self.horizontalSpacer_2)
 
 
         self.verticalLayout.addLayout(self.horizontalLayout_3)
@@ -231,8 +243,9 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"DashcamCleaner", None))
         self.button_source.setText(QCoreApplication.translate("MainWindow", u"Select video", None))
         self.button_target.setText(QCoreApplication.translate("MainWindow", u"Select target", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Frame memory:", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Blur size:", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Frame memory", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Blur size", None))
+        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Feather edges", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Detection threshold:", None))
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"ROI enlargement", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Weights", None))

@@ -31,10 +31,10 @@ class Bounds:
         return center_pos, axis_length
 
     def pt1(self: 'Bounds') -> Tuple[int, int]:
-        return (self.x_max, self.y_max)
+        return self.x_max, self.y_max
 
     def pt2(self: 'Bounds') -> Tuple[int, int]:
-        return (self.x_min, self.y_min)
+        return self.x_min, self.y_min
 
     def expand(self: 'Bounds', shape, amount: int) -> 'Bounds':
         frame_height, frame_width = shape[:2]
