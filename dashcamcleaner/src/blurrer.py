@@ -1,6 +1,5 @@
 import os
 import subprocess
-from math import sqrt
 from shutil import which
 from typing import Dict, List, Union
 
