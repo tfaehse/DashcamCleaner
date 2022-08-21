@@ -97,30 +97,40 @@ For reference: even at 1080p inference, i.e. an inference scale of 1, a 1080p30f
 There's now also a fairly simple CLI to blur a video:
 
 ```
-python cli.py -h
-usage: cli.py [-h] -i INPUT -o OUTPUT [-w WEIGHTS] [-s [1,1024]] [-b [1-99]] [-if [144-2160]]
-              [-t [0-1]] [-r [0-2]] [-q [1, 10]] -f [0-5] [-nf]
+usage: cli.py [-h] -i INPUT -o OUTPUT [-w WEIGHTS] [-s [1, 1024] = 1] [-b [1, 99] = 9]
+              [-if [144, 2160] = 720] [-t [0.0, 1.0] = 0.4] [-r [0.0, 2.0] = 1.0] [-q [1.0, 10.0] =
+              10.0] [-f [0, 5] = 0] [-fe [0, 99] = 5] [-nf]
 
 This tool allows you to automatically censor faces and number plates on dashcam footage.
 
-options:
-  -h, --help                        show this help message and exit
+optional arguments:
+  -h, --help                            show this help message and exit
 
 required arguments:
-  -i, --input INPUT                 input video file path
-  -o, --output OUTPUT               output video file path
+  -i, --input INPUT                     Input video file path.
+  -o, --output OUTPUT                   Output video file path.
 
 optional arguments:
-  -w, --weights WEIGHTS             Weights file to use. See readme for the differences
-  -s, --batch_size [1,1024]         inference batch size - large values require a lof of memory and
-                                    may cause crashes!
-  -b, --blur_size [1-99]            granularity of the blurring filter
-  -if, --inference_size [144-2160]  vertical inference size, e.g. 1080 or 720
-  -t, --threshold [0-1]             detection threshold
-  -r, --roi_multi [0-2]             increase/decrease area that will be blurred - 1 means no change
-  -q, --quality [1, 10]             quality of the resulting video. higher = better, default: 10
-  -f, --frame_memory [0-5]          blur objects in the last x frames too
-  -nf, --no_faces                   do not censor faces
+  -w, --weights WEIGHTS                 Weights file to use. See readme for the differences.
+                                        (default = 720p_medium_mosaic).
+  -s, --batch_size [1, 1024] = 1        Inference batch size - large values require a lof of memory
+                                        and may cause crashes! Not recommended for CPU usage.
+  -b, --blur_size [1, 99] = 9           Kernel radius of the gauss-filter.
+  -if, --inference_size [144, 2160] = 720
+                                        Vertical inference size, e.g. 1080 or 720.
+  -t, --threshold [0.0, 1.0] = 0.4      Detection threshold. Higher value means more certainty,
+                                        lower value means more blurring.
+  -r, --roi_multi [0.0, 2.0] = 1.0      Increase/decrease area that will be blurred - 1.0 means no
+                                        change.
+  -q, --quality [1.0, 10.0] = 10.0      Quality of the resulting video. higher = better. conversion
+                                        to crf: ⌊(1-q/10)*51⌋.
+  -f, --frame_memory [0, 5] = 0         Blur objects in the last x frames too.
+  -fe, --feather_edges [0, 99] = 5      Feather edges of blurred areas, removes sharp edges on blur-
+                                        mask. expands mask by argument and blurs mask, so effective
+                                        size is twice the argument.
+  -nf, --no_faces                       Fo not censor faces.
+  -m, --export_mask                     Export a black and white only video of the blur-mask without
+                                        applying it to the input clip.
 ```
 For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.
 
