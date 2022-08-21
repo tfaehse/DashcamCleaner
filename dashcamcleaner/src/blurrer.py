@@ -1,6 +1,5 @@
 import os
 import subprocess
-from math import sqrt
 from shutil import which
 from typing import Dict, List, Union
 
@@ -43,15 +42,16 @@ class VideoBlurrer:
         """
         # gather inputs from self.parameters
         blur_size = self.parameters["blur_size"] * 2 + 1  # must be odd
-        blur_memory = self.parameters["blur_memory"]
+        frame_memory = self.parameters["frame_memory"]
         roi_multi = self.parameters["roi_multi"]
         no_faces = self.parameters["no_faces"]
         feather_dilate_size = self.parameters["feather_edges"]
         export_mask = self.parameters["export_mask"]
+        export_colored_mask = self.parameters["export_colored_mask"]
 
         # gather and process all currently relevant detections
         self.detections = [
-            x.get_older() for x in self.detections if x.age < blur_memory
+            x.get_older() for x in self.detections if x.age < frame_memory
         ]  # throw out outdated detections, increase age by 1
 
         for detection in new_detections:
@@ -72,10 +72,10 @@ class VideoBlurrer:
         blur_mask = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
         blur_mask_expanded = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
 
-        if export_mask:
-            mask_color = (255, 255, 255)
+        if export_mask or export_colored_mask:
+            mask_color = 255
         else:
-            mask_color = (1, 1, 1)
+            mask_color = 1
 
         for detection in self.detections:
             bounds_list = [detection.bounds]
@@ -85,27 +85,42 @@ class VideoBlurrer:
                 mask_list.append(blur_mask_expanded)
 
             for bounds, mask in zip(bounds_list, mask_list):
+                single_detection_mask_color = (mask_color, ) * 3
+
+                detection_mask = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
                 # add detection bounds to mask
                 if detection.kind == "plate":
-                    cv2.rectangle(mask, bounds.pt1(), bounds.pt2(), color=mask_color, thickness=-1)
+                    if export_colored_mask and detection.score:
+                        single_detection_mask_color = (0, mask_color * detection.score, 0)
+                    cv2.rectangle(detection_mask, bounds.pt1(), bounds.pt2(), color=single_detection_mask_color, thickness=-1)
                 elif detection.kind == "face":
+                    if export_colored_mask and detection.score:
+                        single_detection_mask_color = (0, 0, mask_color * detection.score)
                     center, axes = bounds.ellipse_coordinates()
                     # add ellipse to mask
-                    cv2.ellipse(mask, center, axes, 0, 0, 360, color=mask_color, thickness=-1)
+                    cv2.ellipse(detection_mask, center, axes, 0, 0, 360, color=single_detection_mask_color, thickness=-1)
                 else:
                     raise ValueError(f"Detection kind not supported: {detection.kind}")
+
+                # add single detection to full mask,
+                # thus not replacing potentially overlapping masks, but adding their confidence
+                # if exporT_colored_mask == False this does not matter and does the same
+                cv2.add(src1=detection_mask, src2=mask, dst=mask, dtype=cv2.CV_64F)
 
         if feather_dilate_size > 0:
             # blur mask, to feather its edges
             feather_size = (feather_dilate_size * 3) // 2 * 2 + 1
             blur_mask_feathered = cv2.GaussianBlur(blur_mask_expanded, (feather_size, feather_size), 0)
-            blur_mask = cv2.min(cv2.add(blur_mask, blur_mask_feathered), mask_color)  # do not oversaturate blurred regions, limit mask to max-value of 1 (for all three channels)
+            cv2.add(blur_mask, blur_mask_feathered, dst=blur_mask)
 
-        if export_mask:
+        # do not oversaturate blurred regions, limit mask to max-value (for all three channels)
+        blur_mask = cv2.min(blur_mask, (mask_color, ) * 3)
+
+        if export_mask or export_colored_mask:
             return np.uint8(blur_mask)
 
         # to get the background, invert the blur_mask, i.e. 1 - mask on a matrix per-element level
-        mask_background = cv2.subtract(np.full((frame.shape[0], frame.shape[1], 3), mask_color[0], dtype=np.float64), blur_mask)
+        mask_background = cv2.subtract(np.full((frame.shape[0], frame.shape[1], 3), mask_color, dtype=np.float64), blur_mask)
 
         background = cv2.multiply(frame, mask_background)
         blur = cv2.GaussianBlur(frame, (blur_size, blur_size), 0)
