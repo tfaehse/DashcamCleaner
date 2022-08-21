@@ -102,6 +102,8 @@ class MainWindow(QMainWindow):
             "quality": self.ui.spin_quality.value(),
             "batch_size": self.ui.spin_batch.value(),
             "no_faces": False,
+            "feather_edges": self.ui.spin_feather_edges.value(),
+            "export_mask": False,
         }
 
     def button_start_clicked(self):
