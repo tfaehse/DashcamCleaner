@@ -226,7 +226,7 @@ def setup_detector(weights_path: str):
     :param weights_path: path to .pt file with this repo's weights
     :return: initialized yolov5 detector
     """
-    model = torch.hub.load("ultralytics/yolov5", "custom", weights_path, _verbose=False)
+    model = torch.hub.load("ultralytics/yolov5", "custom", weights_path, verbose=False)
     if torch.cuda.is_available():
         print(f"Using {torch.cuda.get_device_name(torch.cuda.current_device())}.")
         model.cuda()
