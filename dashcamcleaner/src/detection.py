@@ -9,7 +9,7 @@ class Detection:
 
     def __init__(self: 'Detection', bounds: Bounds, score: float, kind: str) -> None:
         self.bounds = bounds
-        self.score = score
+        self.score = float(score)
         self.kind = kind
         self.age = 0
 

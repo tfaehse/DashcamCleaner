@@ -97,40 +97,100 @@ For reference: even at 1080p inference, i.e. an inference scale of 1, a 1080p30f
 There's now also a fairly simple CLI to blur a video:
 
 ```
-usage: cli.py [-h] -i INPUT -o OUTPUT [-w WEIGHTS] [-s [1, 1024] = 1] [-b [1, 99] = 9]
-              [-if [144, 2160] = 720] [-t [0.0, 1.0] = 0.4] [-r [0.0, 2.0] = 1.0] [-q [1.0, 10.0] =
-              10.0] [-f [0, 5] = 0] [-fe [0, 99] = 5] [-nf]
+usage: cli.py -i INPUT_PATH -o OUTPUT_PATH [-w WEIGHTS] [-s [1, 1024]]
+              [-b [1, 99]] [-if [144, 2160]] [-t [0.0, 1.0]] [-r [0.0, 2.0]]
+              [-q [1.0, 10.0]] [-f [0, 5]] [-fe [0, 99]] [-nf] [-m] [-mc] [-h]
 
-This tool allows you to automatically censor faces and number plates on dashcam footage.
-
-optional arguments:
-  -h, --help                            show this help message and exit
+This tool allows you to automatically censor faces and number plates on
+dashcam footage.
 
 required arguments:
-  -i, --input INPUT                     Input video file path.
-  -o, --output OUTPUT                   Output video file path.
+    -i INPUT_PATH
+    --input_path INPUT_PATH
+        Input video file path.
+
+    -o OUTPUT_PATH
+    --output_path OUTPUT_PATH
+        Output video file path.
+
 
 optional arguments:
-  -w, --weights WEIGHTS                 Weights file to use. See readme for the differences.
-                                        (default = 720p_medium_mosaic).
-  -s, --batch_size [1, 1024] = 1        Inference batch size - large values require a lof of memory
-                                        and may cause crashes! Not recommended for CPU usage.
-  -b, --blur_size [1, 99] = 9           Kernel radius of the gauss-filter.
-  -if, --inference_size [144, 2160] = 720
-                                        Vertical inference size, e.g. 1080 or 720.
-  -t, --threshold [0.0, 1.0] = 0.4      Detection threshold. Higher value means more certainty,
-                                        lower value means more blurring.
-  -r, --roi_multi [0.0, 2.0] = 1.0      Increase/decrease area that will be blurred - 1.0 means no
-                                        change.
-  -q, --quality [1.0, 10.0] = 10.0      Quality of the resulting video. higher = better. conversion
-                                        to crf: ⌊(1-q/10)*51⌋.
-  -f, --frame_memory [0, 5] = 0         Blur objects in the last x frames too.
-  -fe, --feather_edges [0, 99] = 5      Feather edges of blurred areas, removes sharp edges on blur-
-                                        mask. expands mask by argument and blurs mask, so effective
-                                        size is twice the argument.
-  -nf, --no_faces                       Fo not censor faces.
-  -m, --export_mask                     Export a black and white only video of the blur-mask without
-                                        applying it to the input clip.
+    -w WEIGHTS  (Default: 720p_medium_mosaic)
+    --weights WEIGHTS
+        Weights file to use. See readme for the differences. (default =
+        720p_medium_mosaic).
+
+    -b [1, 99]  (Default: 9)
+    --blur_size [1, 99]
+        Kernel radius of the gauss-filter. Higher value means more blurring, 0
+        would mean no blurring at all.
+
+    -if [144, 2160]  (Default: 720)
+    --inference_size [144, 2160]
+        Vertical inference size, e.g. 1080 or 720.
+
+    -t [0.0, 1.0]  (Default: 0.4)
+    --threshold [0.0, 1.0]
+        Detection threshold. Higher value means more certainty, lower value
+        means more blurring. This setting affects runtime, a lower threshold
+        means slower execution times.
+
+    -r [0.0, 2.0]  (Default: 1.0)
+    --roi_multi [0.0, 2.0]
+        Increase or decrease the area that will be blurred - 1.0 means no
+        change.
+
+    -q [1.0, 10.0]  (Default: 10)
+    --quality [1.0, 10.0]
+        Quality of the resulting video. higher = better. Conversion to crf:
+        ⌊(1-q/10)*51⌋.
+
+    -f [0, 5]  (Default: 0)
+    --frame_memory [0, 5]
+        Blur objects in the last x frames too.
+
+    -fe [0, 99]  (Default: 5)
+    --feather_edges [0, 99]
+        Feather edges of blurred areas, removes sharp edges on blur-mask.
+        Expands mask by argument and blurs mask, so effective size is twice
+        the argument.
+
+    -nf   (Default: False)
+    --no_faces
+        Do not censor faces.
+
+    -h
+    --help
+        Show this help message and exit.
+
+
+optional arguments (advanced):
+    -s [1, 1024]  (Default: 1)
+    --batch_size [1, 1024]
+        Inference batch size - large values require a lof of memory and may
+        cause crashes!
+        This will read multiple frames at the same time and perform detection
+        on all of those at once.
+        Not recommended for CPU usage.
+
+    -m   (Default: False)
+    --export_mask
+        Export a black and white only video of the blur-mask without applying
+        it to the input clip.
+
+    -mc   (Default: False)
+    --export_colored_mask
+        Export a colored mask video of the blur-mask without applying it to
+        the input clip.
+        The value represents the confidence of the detector.
+        Lower values mean less confidence, brighter colors mean more
+        confidence.
+        If the --threshold setting is larger than 0 then detections with a
+        lower confidence are discarded.
+        Channels; Red: Faces, Green: Numberplates.
+        Hint: turn off --feather_edges by setting -fe=0 and turn --quality to
+        10, a --frame_memory=0 is also recommended for this setting.
+
 ```
 For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.
 
