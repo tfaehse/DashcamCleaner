@@ -2,3 +2,4 @@ __pycache__
 *.log
 .vscode
 gui.ini
+.idea

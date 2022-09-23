@@ -107,11 +107,11 @@ dashcam footage.
 required arguments:
     -i INPUT_PATH
     --input_path INPUT_PATH
-        Input video file path.
+        Input video file path. Pass a folder name for batch processing all files in the folder.
 
     -o OUTPUT_PATH
     --output_path OUTPUT_PATH
-        Output video file path.
+        Output video file path. Pass a folder name for batch processing.
 
 
 optional arguments:
@@ -193,6 +193,20 @@ optional arguments (advanced):
 
 ```
 For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.
+
+## Docker Usage
+
+Batch processing videos inside a docker (or podman) container
+
+```bash
+git clone https://github.com/tfaehse/DashcamCleaner.git
+docker build --pull -t dashcamcleaner DashcamCleaner
+mkdir -p {input,output}
+# place your files in the input folder
+docker run -it --rm -v "$PWD/input:/input" -v "$PWD/output:/output" dashcamcleaner
+# to customize options, just use regular parameter:
+docker run -it --rm -v "$PWD/input:/input" -v "$PWD/output:/output" dashcamcleaner --weights 1080p_medium_mosaic
+```
 
 <!-- WEIGHTS -->
 ## Weights

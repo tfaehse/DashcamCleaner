@@ -2,7 +2,9 @@
 
 import argparse
 import signal
+import sys
 import textwrap
+from pathlib import Path
 from typing import Dict, List, Union
 
 from src.blurrer import VideoBlurrer
@@ -14,13 +16,43 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 class CLI:
     def __init__(self, opt):
         self.opt = opt
+        self.sanitize_opts()
+
+    def sanitize_opts(self):
+        input_path, output_path = Path(self.opt.input_path), Path(self.opt.output_path)
+        if input_path.is_file() and output_path.is_dir():  # if input refers a file, output must refer to a file too
+            self.opt.output_path = (output_path / input_path.name).absolute()
+            output_path = Path(self.opt.output_path)
+        if output_path.is_file():
+            sys.exit(f'The output_path "{self.opt.output_path}" already exists. The file will not be overwritten.')
+        if input_path.is_dir():  # batch processing mode
+            if not output_path.is_dir():
+                sys.exit('For batch processing mode, both input_path and output_path must be directories!')
+            if not any(input_path.glob('*.*')):
+                sys.exit('The input_path is empty. Nothing to do.')
+            for input_file in input_path.glob('*.*'):
+                test_out_path = output_path / input_file.name
+                if test_out_path.exists():
+                    sys.exit(f'The output_path "{test_out_path.absolute()}" already exists. Aborting.')
+        else:
+            sys.exit('input_path is invalid')
 
     def start_blurring(self):
-        # dump parameters
-        print(vars(opt))
+        input_path, output_path = Path(self.opt.input_path), Path(self.opt.output_path)
+        if input_path.is_dir():  # batch mode
+            for input_file in input_path.glob('*.*'):
+                opt.input_path = input_file.absolute()
+                opt.output_path = (output_path / input_file.name).absolute()
+                self.start_blurring_file()
+        else:
+            self.start_blurring_file()
+
+    def start_blurring_file(self):
+        print('Start blurring video:', self.opt.input_path)
+        print('Blurring parameter:', vars(self.opt))
 
         # set up parameters
-        parameters: Dict[str, Union[bool, int, float, str]] = vars(self.opt)
+        parameters: Dict[str, Union[bool, int, float, str]] = vars(self.opt)  # convert opt to dict type
 
         # read inference size
         inference_size = int(self.opt.inference_size) * 16 / 9  # ouch again
@@ -30,7 +62,7 @@ class CLI:
         blurrer = VideoBlurrer(self.opt.weights, parameters)
         blurrer.blur_video()
 
-        print("Video blurred successfully.")
+        print("Blurred video successfully written to:", self.opt.output_path)
 
 
 def parse_arguments():
@@ -75,14 +107,14 @@ def parse_arguments():
         "-i",
         "--input_path",
         required=True,
-        help="Input video file path.",
+        help="Input video file path. Pass a folder name for batch processing all files in the folder.",
         type=str
     )
     required.add_argument(
         "-o",
         "--output_path",
         required=True,
-        help="Output video file path.",
+        help="Output video file path. Pass a folder name for batch processing.",
         type=str,
     )
 
