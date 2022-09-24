@@ -34,7 +34,7 @@ class CLI:
                 test_out_path = output_path / input_file.name
                 if test_out_path.exists():
                     sys.exit(f'The output_path "{test_out_path.absolute()}" already exists. Aborting.')
-        else:
+        elif not input_path.is_file():
             sys.exit('input_path is invalid')
 
     def start_blurring(self):
