@@ -104,6 +104,7 @@ class MainWindow(QMainWindow):
             "no_faces": False,
             "feather_edges": self.ui.spin_feather_edges.value(),
             "export_mask": False,
+            "export_colored_mask": False,
         }
 
     def button_start_clicked(self):
