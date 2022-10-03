@@ -85,20 +85,22 @@ class VideoBlurrer:
                 mask_list.append(blur_mask_expanded)
 
             for bounds, mask in zip(bounds_list, mask_list):
-                single_detection_mask_color = (mask_color, ) * 3
+                single_detection_mask_color = (mask_color,) * 3
 
                 detection_mask = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
                 # add detection bounds to mask
                 if detection.kind == "plate":
                     if export_colored_mask and detection.score:
                         single_detection_mask_color = (0, mask_color * detection.score, 0)
-                    cv2.rectangle(detection_mask, bounds.pt1(), bounds.pt2(), color=single_detection_mask_color, thickness=-1)
+                    cv2.rectangle(
+                        detection_mask, bounds.pt1(), bounds.pt2(), color=single_detection_mask_color, thickness=-1)
                 elif detection.kind == "face":
                     if export_colored_mask and detection.score:
                         single_detection_mask_color = (0, 0, mask_color * detection.score)
                     center, axes = bounds.ellipse_coordinates()
                     # add ellipse to mask
-                    cv2.ellipse(detection_mask, center, axes, 0, 0, 360, color=single_detection_mask_color, thickness=-1)
+                    cv2.ellipse(
+                        detection_mask, center, axes, 0, 0, 360, color=single_detection_mask_color, thickness=-1)
                 else:
                     raise ValueError(f"Detection kind not supported: {detection.kind}")
 
@@ -114,13 +116,14 @@ class VideoBlurrer:
             cv2.add(blur_mask, blur_mask_feathered, dst=blur_mask)
 
         # do not oversaturate blurred regions, limit mask to max-value (for all three channels)
-        blur_mask = cv2.min(blur_mask, (mask_color, ) * 3)
+        blur_mask = cv2.min(blur_mask, (mask_color,) * 3)
 
         if export_mask or export_colored_mask:
             return np.uint8(blur_mask)
 
         # to get the background, invert the blur_mask, i.e. 1 - mask on a matrix per-element level
-        mask_background = cv2.subtract(np.full((frame.shape[0], frame.shape[1], 3), mask_color, dtype=np.float64), blur_mask)
+        mask_background = cv2.subtract(
+            np.full((frame.shape[0], frame.shape[1], 3), mask_color, dtype=np.float64), blur_mask)
 
         background = cv2.multiply(frame, mask_background)
         blur = cv2.GaussianBlur(frame, (blur_size, blur_size), 0)
@@ -134,7 +137,7 @@ class VideoBlurrer:
         :return: detected faces and plates
         """
         scale = self.parameters["inference_size"]
-        results_list = self.detector(images, size=scale).xyxy
+        results_list = self.detector(images, size=(scale,)).xyxy
         return [
             [
                 Detection(
@@ -158,7 +161,8 @@ class VideoBlurrer:
         """
         # gather inputs from self.parameters
         input_path = self.parameters["input_path"]
-        temp_output = f"{os.path.splitext(self.parameters['output_path'])[0]}_copy{os.path.splitext(self.parameters['output_path'])[1]}"
+        _temp_path, _temp_ext = os.path.splitext(self.parameters['output_path'])
+        temp_output = f"{_temp_path}_copy{_temp_ext}"
         output_path = self.parameters["output_path"]
         threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
@@ -179,11 +183,11 @@ class VideoBlurrer:
 
             # save the video to a file
             with imageio.get_writer(
-                temp_output, codec="libx264", fps=fps, quality=quality
+                    temp_output, codec="libx264", fps=fps, quality=quality
             ) as writer:
 
                 with tqdm(
-                    total=length, desc="Processing video", unit="frames", dynamic_ncols=True
+                        total=length, desc="Processing video", unit="frames", dynamic_ncols=True
                 ) as progress_bar:
                     for frame_batch in chunked(reader, batch_size):
                         frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
