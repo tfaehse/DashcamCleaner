@@ -24,6 +24,7 @@
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="installation-via-pypi">Installation via PyPI</a></li>
         <li><a href="#installation-example-on-windows-using-conda">Installation example on Windows using Conda</a></li>
       </ul>
     </li>
@@ -57,8 +58,12 @@ To get a local copy up and running follow these simple steps.
 
 You need a working Python environment with a Python version of 3.8 or higher that satisfies the listed `requirements.txt`. Depending on your machine, you can leverage GPU acceleration for pytorch - see [here](https://pytorch.org/get-started/locally/) or just use `requirements-gpu.txt`.
 
-
 Since OpenCV does not care about audio channels, ffmpeg is used to combine the edited video and the audio channel of the input video. The environment variable `FFMPEG_BINARY` needs to be set to the ffmpeg executable for this to work.
+
+### Installation via PyPI
+
+Dashcamcleaner can now be installed via PyPI too. Run `pip install -i https://test.pypi.org/simple/ dashcamcleaner`. If that goes well, you can run the tool with 
+`python -m dashcamcleaner` from anywhere. If you don't supply any arguments the GUI will be used, otherwise the CLI.
 
 ### Installation example on Windows using Conda
 
