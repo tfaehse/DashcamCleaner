@@ -61,9 +61,14 @@ class VideoBlurrer:
             scaled_detection.age = 0
             self.detections.append(scaled_detection)
 
-        if len(self.detections) < 1:
-            # there are no detections for this frame, leave early and return the same input-frame
-            return frame
+        if len(self.detections) < 1 and not (export_mask or export_colored_mask):
+            # there are no detections for this frame, leave early
+            if not (export_mask or export_colored_mask): 
+                # if not mask export return the same input-frame
+                return frame
+            else:
+                # if mask export, return empty mask
+                return np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.uint8)
 
         # convert to float, since the mask needs to be in range [0, 1] and in float
         frame = np.float64(frame)
