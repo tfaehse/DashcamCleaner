@@ -68,7 +68,7 @@ class TrainingDataGenerator:
         :param label_format: format for class labels
         :return:
         """
-        videos = glob(input_folder + "/*.m*")
+        videos = glob(input_folder + "/*.m*") + glob(input_folder + "/*.M*")
         pictures = glob(input_folder + "/**/*.jpg", recursive=True)
         num_videos = len(videos)
         num_pictures = len(pictures)
@@ -77,7 +77,7 @@ class TrainingDataGenerator:
         train_videos = floor(train_split * num_videos)
         train_pictures = floor(train_split * num_pictures)
 
-        if label_format == "yolo":
+        if label_format in ["yolo", "torch"]:
             # create necessary output folders
             for folder in [image_folder, label_folder]:
                 for training_set in ["train", "val"]:
