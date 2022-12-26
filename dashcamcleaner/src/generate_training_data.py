@@ -188,19 +188,21 @@ class TrainingDataGenerator:
                 # df.to_csv(f"{self.folder}/labels.csv", index=False)
                 df.apply(lambda x: write_yolo(x, self.folder, folder_suffix), axis=1)
             elif label_format == "voc":
+                label_path = os.path.join(self.folder, "labels", folder_suffix)
                 for name, group in df.groupby("name"):
+                    image_path = os.path.join(self.folder, "images", folder_suffix, name)
                     width = group.iloc[0]["width"]
                     height = group.iloc[0]["height"]
-                    writer = Writer(os.path.basename(name), width, height)
+                    writer = Writer(image_path, width, height)
                     for _, row in group.iterrows():
                         writer.addObject(
-                            row["type"], row["xmin"], row["ymin"], row["xmax"], row["ymax"]
+                            row["type"], row["ymin"], row["xmin"], row["ymax"], row["xmax"]
                         )
-                    writer.save(os.path.splitext(name)[0] + ".xml")
+                    writer.save(os.path.join(label_path, os.path.splitext(name)[0] + ".xml"))
             elif label_format == "torch":
                 class_dict = {"plate": 0, "face": 1}
                 df["class"] = df["type"].apply(lambda x: class_dict[x])
-                df.to_csv("labels.csv")
+                df.to_csv(os.path.join(self.folder, "labels.csv"))
             else:
                 raise AttributeError(f"Label format {label_format} is not supported!")
         else:
@@ -273,19 +275,21 @@ class TrainingDataGenerator:
                 # df.to_csv(f"{self.folder}/labels.csv", index=False)
                 df.apply(lambda x: write_yolo(x, self.folder, folder_suffix), axis=1)
             elif label_format == "voc":
+                label_path = os.path.join(self.folder, "labels", folder_suffix)
                 for name, group in df.groupby("name"):
+                    image_path = os.path.join(self.folder, "images", folder_suffix, name)
                     width = group.iloc[0]["width"]
                     height = group.iloc[0]["height"]
-                    writer = Writer(os.path.basename(name), width, height)
+                    writer = Writer(image_path, width, height)
                     for _, row in group.iterrows():
                         writer.addObject(
-                            row["type"], row["xmin"], row["ymin"], row["xmax"], row["ymax"]
+                            row["type"], row["ymin"], row["xmin"], row["ymax"], row["xmax"]
                         )
-                    writer.save(os.path.splitext(name)[0] + ".xml")
+                    writer.save(os.path.join(label_path, os.path.splitext(name)[0] + ".xml"))
             elif label_format == "torch":
                 class_dict = {"plate": 0, "face": 1}
                 df["class"] = df["type"].apply(lambda x: class_dict[x])
-                df.to_csv("labels.csv")
+                df.to_csv(os.path.join(self.folder, "labels.csv"))
             else:
                 raise AttributeError(f"Label format {label_format} is not supported!")
         else:
