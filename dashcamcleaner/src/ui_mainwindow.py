@@ -4,7 +4,7 @@
 ################################################################################
 ## Form generated from reading UI file 'mainwindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.2.3
+## Created by: Qt User Interface Compiler version 6.3.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(842, 263)
+        MainWindow.resize(685, 263)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -73,16 +73,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.label_2 = QLabel(self.centralwidget)
-        self.label_2.setObjectName(u"label_2")
-
-        self.horizontalLayout_3.addWidget(self.label_2)
-
-        self.spin_memory = QSpinBox(self.centralwidget)
-        self.spin_memory.setObjectName(u"spin_memory")
-
-        self.horizontalLayout_3.addWidget(self.spin_memory)
-
         self.label_3 = QLabel(self.centralwidget)
         self.label_3.setObjectName(u"label_3")
 
@@ -179,7 +169,8 @@ class Ui_MainWindow(object):
         self.spin_batch = QSpinBox(self.centralwidget)
         self.spin_batch.setObjectName(u"spin_batch")
         self.spin_batch.setMinimum(1)
-        self.spin_batch.setMaximum(200)
+        self.spin_batch.setMaximum(256)
+        self.spin_batch.setValue(16)
 
         self.horizontalLayout_4.addWidget(self.spin_batch)
 
@@ -243,7 +234,6 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"DashcamCleaner", None))
         self.button_source.setText(QCoreApplication.translate("MainWindow", u"Select video", None))
         self.button_target.setText(QCoreApplication.translate("MainWindow", u"Select target", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Frame memory", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"Blur size", None))
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"Feather edges", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Detection threshold:", None))

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>842</width>
+    <width>685</width>
     <height>263</height>
    </rect>
   </property>
@@ -66,16 +66,6 @@
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Frame memory</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QSpinBox" name="spin_memory"/>
-      </item>
       <item>
        <widget class="QLabel" name="label_3">
         <property name="text">
@@ -223,7 +213,10 @@
          <number>1</number>
         </property>
         <property name="maximum">
-         <number>200</number>
+         <number>256</number>
+        </property>
+        <property name="value">
+         <number>16</number>
         </property>
        </widget>
       </item>

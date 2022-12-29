@@ -145,10 +145,6 @@ optional arguments:
         Quality of the resulting video. higher = better. Conversion to crf:
         ⌊(1-q/10)*51⌋.
 
-    -f [0, 5]  (Default: 0)
-    --frame_memory [0, 5]
-        Blur objects in the last x frames too.
-
     -fe [0, 99]  (Default: 5)
     --feather_edges [0, 99]
         Feather edges of blurred areas, removes sharp edges on blur-mask.
@@ -234,8 +230,8 @@ With the transition to a custom YOLOv5 detector, the original targets for the to
 - release standalone executable
 
 Implemented post processing steps:
-- a "frame memory": plate and face positions from the last n frames are also blurred → useful for static plates/faces
-- enlarging of blurred regions → useful in combination with frame memory - most single missed frames can be captured this way, unless very quick movement is happening
+- ~~a "frame memory": plate and face positions from the last n frames are also blurred → useful for static plates/faces~~ removed because frames are processed in parallel now
+- enlarging of blurred regions 
 
 
 <!-- CONTRIBUTING -->
