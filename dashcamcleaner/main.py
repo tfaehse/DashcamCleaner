@@ -3,6 +3,7 @@ import inspect
 import os
 import sys
 from glob import glob
+from pathlib import Path
 
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
@@ -19,8 +20,8 @@ class MainWindow(QMainWindow):
         Constructor
         """
         self.receive_attempts = 0
-        save_path = os.path.join(os.path.dirname(__file__), "gui.ini")
-        self.settings = QSettings(save_path, QSettings.IniFormat)
+        save_path = Path(__file__).parent / "gui.ini"
+        self.settings = QSettings(str(save_path), QSettings.IniFormat)
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -35,10 +36,11 @@ class MainWindow(QMainWindow):
 
     def load_weights_options(self):
         self.ui.combo_box_weights.clear()
-        source_folder = os.path.join(os.path.dirname(__file__))
-        for net_path in glob(source_folder + "/weights/*.pt"):
-            clean_name = os.path.splitext(os.path.basename(net_path))[0]
-            self.ui.combo_box_weights.addItem(clean_name)
+        source_folder = Path(__file__).parent / "weights"
+        available_weights_files = list(source_folder.rglob("*.pt"))
+        assert len(available_weights_files) > 0, "There has to be at least one .pt file in dashcamcleaner/weights"
+        for net_path in available_weights_files:
+            self.ui.combo_box_weights.addItem(net_path.stem)
 
     def setup_blurrer(self):
         """

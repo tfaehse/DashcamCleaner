@@ -1,5 +1,6 @@
 import os
 import subprocess
+from pathlib import Path
 from shutil import which
 from typing import Dict, List, Union
 
@@ -25,11 +26,7 @@ class VideoBlurrer:
         """
         self.parameters = parameters
         self.detections = []
-        weights_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "weights",
-            f"{weights_name}.pt".replace(".pt.pt", ".pt"),
-        )
+        weights_path = Path(__file__).resolve().parents[1] / "weights" / f"{weights_name}.pt".replace(".pt.pt", ".pt")
         self.detector = setup_detector(weights_path)
         print("Worker created")
 
@@ -166,8 +163,8 @@ class VideoBlurrer:
         """
         # gather inputs from self.parameters
         input_path = self.parameters["input_path"]
-        _temp_path, _temp_ext = os.path.splitext(self.parameters['output_path'])
-        temp_output = f"{_temp_path}_copy{_temp_ext}"
+        output_file = Path(self.parameters["output_path"])
+        temp_output = output_file.parent / f"{output_file.stem}_copy.{output_file.suffix}"
         output_path = self.parameters["output_path"]
         threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
