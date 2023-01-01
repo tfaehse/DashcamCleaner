@@ -1,9 +1,9 @@
 import os
 import subprocess
-from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 from shutil import which
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 import cv2
 import imageio
@@ -163,16 +163,21 @@ def is_installed(name):
     return which(name) is not None
 
 
-def blur_helper(args: List):
+def blur_helper(args: Tuple[cv2.Mat, List[Detection], Dict]):
     """
     Free helper function with a single parameter that can be called in a ProcessPoolExecutor
     :param args: List of apply_blur parameters
     :return: Blurred frame
     """
-    return apply_blur(*args)
+
+    frame: cv2.Mat
+    new_detections: List[Detection]
+    parameters: Dict
+    frame, new_detections, parameters = args
+    return apply_blur(frame, new_detections, parameters)
 
 
-def apply_blur(frame: np.array, new_detections: List[Detection], parameters: Dict):
+def apply_blur(frame: cv2.Mat, new_detections: List[Detection], parameters: Dict):
     """
     Apply Gaussian blur to regions of interests
     :param frame: input image
@@ -187,7 +192,7 @@ def apply_blur(frame: np.array, new_detections: List[Detection], parameters: Dic
     export_mask = parameters["export_mask"]
     export_colored_mask = parameters["export_colored_mask"]
 
-    detections = []
+    detections: List[Detection] = []
     for detection in new_detections:
         if no_faces and detection.kind == "face":
             continue

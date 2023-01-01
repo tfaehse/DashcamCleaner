@@ -1,15 +1,15 @@
 import os
 import subprocess
-from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 from shutil import which
 from timeit import default_timer as timer
 
 import cv2
 import imageio
-from PySide6.QtCore import QThread, Signal
 from more_itertools import chunked
-from src.blurrer import VideoBlurrer, apply_blur, blur_helper
+from PySide6.QtCore import QThread, Signal
+from src.blurrer import VideoBlurrer, blur_helper
 
 
 class qtVideoBlurWrapper(QThread, VideoBlurrer):

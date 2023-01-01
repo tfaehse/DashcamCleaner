@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import inspect
-import os
 import sys
-from glob import glob
 from pathlib import Path
 
 from PySide6.QtCore import QSettings
