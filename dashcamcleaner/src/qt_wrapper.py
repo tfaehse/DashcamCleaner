@@ -1,14 +1,15 @@
 import os
 import subprocess
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from shutil import which
 from timeit import default_timer as timer
 
 import cv2
 import imageio
-from PySide6.QtCore import QThread, Signal
 from more_itertools import chunked
-from src.blurrer import VideoBlurrer
+from PySide6.QtCore import QThread, Signal
+from src.blurrer import VideoBlurrer, blur_helper
 
 
 class qtVideoBlurWrapper(QThread, VideoBlurrer):
@@ -57,6 +58,7 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
             duration = meta["duration"]
             length = int(duration * fps)
             audio_present = "audio_codec" in meta
+            blur_executor = ProcessPoolExecutor()
 
             # save the video to a file
             with imageio.get_writer(
@@ -70,11 +72,12 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
                 for frame_batch in chunked(reader, batch_size):
                     frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
                     new_detections = self.detect_identifiable_information(frame_buffer)
-                    for frame, detections in zip(frame_buffer, new_detections):
-                        frame_blurred = self.apply_blur(frame, detections)
+                    args = [[frame, detections, self.parameters] for frame, detections in
+                            zip(frame_buffer, new_detections)]
+                    for frame_blurred in blur_executor.map(blur_helper, args):
                         frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
                         writer.append_data(frame_blurred_rgb)
-                        current_frame += 1
+                    current_frame += batch_size
                     self.updateProgress.emit(current_frame)
 
         # copy over audio stream from original video to edited video

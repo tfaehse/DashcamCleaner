@@ -185,16 +185,6 @@ Not recommended for CPU usage.""",
         default=10,
     )
     optional.add_argument(
-        "-f",
-        "--frame_memory",
-        required=False,
-        help="Blur objects in the last x frames too.",
-        type=int,
-        metavar="[0, 5]",
-        choices=range(5 + 1),
-        default=0,
-    )
-    optional.add_argument(
         "-fe",
         "--feather_edges",
         required=False,
@@ -230,7 +220,7 @@ The value represents the confidence of the detector.
 Lower values mean less confidence, brighter colors mean more confidence.
 If the --threshold setting is larger than 0 then detections with a lower confidence are discarded.
 Channels; Red: Faces, Green: Numberplates.
-Hint: turn off --feather_edges by setting -fe=0 and turn --quality to 10, a --frame_memory=0 is also recommended for this setting.""",
+Hint: turn off --feather_edges by setting -fe=0 and turn --quality to 10""",
         default=False,
     )
     optional.add_argument(

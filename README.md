@@ -99,7 +99,7 @@ There's now also a fairly simple CLI to blur a video:
 ```
 usage: cli.py -i INPUT_PATH -o OUTPUT_PATH [-w WEIGHTS] [-s [1, 1024]]
               [-b [1, 99]] [-if [144, 2160]] [-t [0.0, 1.0]] [-r [0.0, 2.0]]
-              [-q [1.0, 10.0]] [-f [0, 5]] [-fe [0, 99]] [-nf] [-m] [-mc] [-h]
+              [-q [1.0, 10.0]] [-fe [0, 99]] [-nf] [-m] [-mc] [-h]
 
 This tool allows you to automatically censor faces and number plates on
 dashcam footage.
@@ -107,7 +107,8 @@ dashcam footage.
 required arguments:
     -i INPUT_PATH
     --input_path INPUT_PATH
-        Input video file path. Pass a folder name for batch processing all files in the folder.
+        Input video file path. Pass a folder name for batch processing all
+        files in the folder.
 
     -o OUTPUT_PATH
     --output_path OUTPUT_PATH
@@ -144,10 +145,6 @@ optional arguments:
     --quality [1.0, 10.0]
         Quality of the resulting video. higher = better. Conversion to crf:
         ⌊(1-q/10)*51⌋.
-
-    -f [0, 5]  (Default: 0)
-    --frame_memory [0, 5]
-        Blur objects in the last x frames too.
 
     -fe [0, 99]  (Default: 5)
     --feather_edges [0, 99]
@@ -189,8 +186,7 @@ optional arguments (advanced):
         lower confidence are discarded.
         Channels; Red: Faces, Green: Numberplates.
         Hint: turn off --feather_edges by setting -fe=0 and turn --quality to
-        10, a --frame_memory=0 is also recommended for this setting.
-
+        10
 ```
 For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.
 
@@ -234,8 +230,8 @@ With the transition to a custom YOLOv5 detector, the original targets for the to
 - release standalone executable
 
 Implemented post processing steps:
-- a "frame memory": plate and face positions from the last n frames are also blurred → useful for static plates/faces
-- enlarging of blurred regions → useful in combination with frame memory - most single missed frames can be captured this way, unless very quick movement is happening
+- ~~a "frame memory": plate and face positions from the last n frames are also blurred → useful for static plates/faces~~ removed because frames are processed in parallel now
+- enlarging of blurred regions
 
 
 <!-- CONTRIBUTING -->

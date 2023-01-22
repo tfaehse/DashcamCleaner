@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import inspect
-import os
 import sys
-from glob import glob
 from pathlib import Path
 
 from PySide6.QtCore import QSettings
@@ -97,7 +95,6 @@ class MainWindow(QMainWindow):
             "input_path": self.ui.line_source.text(),
             "output_path": self.ui.line_target.text(),
             "blur_size": self.ui.spin_blur.value(),
-            "frame_memory": self.ui.spin_memory.value(),
             "threshold": self.ui.double_spin_threshold.value(),
             "roi_multi": self.ui.double_spin_roimulti.value(),
             "inference_size": inference_size,
