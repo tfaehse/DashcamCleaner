@@ -8,7 +8,7 @@ class Bounds:
     x_max: int
     y_max: int
 
-    def __init__(self: 'Bounds', x_min: int, y_min: int, x_max: int, y_max: int):
+    def __init__(self: "Bounds", x_min: int, y_min: int, x_max: int, y_max: int):
         self.x_min = int(x_min)
         self.y_min = int(y_min)
         self.x_max = int(x_max)
@@ -21,7 +21,7 @@ class Bounds:
         """
         return slice(int(self.y_min), int(self.y_max)), slice(int(self.x_min), int(self.x_max))
 
-    def ellipse_coordinates(self: 'Bounds') -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    def ellipse_coordinates(self: "Bounds") -> Tuple[Tuple[int, int], Tuple[int, int]]:
         """
         Calculate elliptic coordinates for the box
         :return: position + radii
@@ -30,13 +30,13 @@ class Bounds:
         axis_length = (int((self.x_max - self.x_min) / 2), int((self.y_max - self.y_min) / 2))
         return center_pos, axis_length
 
-    def pt1(self: 'Bounds') -> Tuple[int, int]:
+    def pt1(self: "Bounds") -> Tuple[int, int]:
         return self.x_max, self.y_max
 
-    def pt2(self: 'Bounds') -> Tuple[int, int]:
+    def pt2(self: "Bounds") -> Tuple[int, int]:
         return self.x_min, self.y_min
 
-    def expand(self: 'Bounds', shape, amount: int) -> 'Bounds':
+    def expand(self: "Bounds", shape, amount: int) -> "Bounds":
         frame_height, frame_width = shape[:2]
 
         scaled_detection = Bounds(
@@ -47,7 +47,7 @@ class Bounds:
         )
         return scaled_detection
 
-    def scale(self: 'Bounds', shape, multiplier) -> 'Bounds':
+    def scale(self: "Bounds", shape, multiplier) -> "Bounds":
         """
         Scales a bounding box by a size multiplier and while respecting image dimensions
         :param shape: shape of the image
@@ -75,7 +75,7 @@ class Bounds:
     def __repr__(self):
         return f"Box({self.x_min}, {self.y_min}, {self.x_max}, {self.y_max})"
 
-    def __eq__(self: 'Bounds', other):
+    def __eq__(self: "Bounds", other):
         if isinstance(other, Bounds):
             return (
                 self.x_min == other.x_min

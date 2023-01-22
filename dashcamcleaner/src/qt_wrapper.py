@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import os
 import subprocess
 from concurrent.futures import ProcessPoolExecutor
@@ -16,6 +17,7 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
     setMaximum = Signal(int)
     updateProgress = Signal(int)
     alert = Signal(str)
+    status = Signal(str)
 
     def __init__(self, weights_name, parameters):
         """
@@ -27,6 +29,12 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
         VideoBlurrer.__init__(self, weights_name, parameters)
         self.result = {"success": False, "elapsed_time": 0}
         self._abort = False
+
+    def abort(self):
+        """
+        Tell the blurrer to (cleanly) exit by processing no further batches
+        """
+        self._abort = True
 
     def run(self):
         """
@@ -45,6 +53,7 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
         threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
         batch_size = self.parameters["batch_size"]
+        blur_workers = min(self.parameters["blur_workers"], mp.cpu_count(), batch_size)
 
         # customize detector
         self.detector.conf = threshold
@@ -58,11 +67,11 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
             duration = meta["duration"]
             length = int(duration * fps)
             audio_present = "audio_codec" in meta
-            blur_executor = ProcessPoolExecutor()
+            blur_executor = ProcessPoolExecutor(blur_workers)
 
             # save the video to a file
             with imageio.get_writer(
-                temp_output, codec="libx264", fps=fps, quality=quality
+                temp_output, codec="libx264", fps=fps, quality=quality, macro_block_size=None
             ) as writer:
 
                 # update GUI's progress bar on its maximum frames
@@ -70,15 +79,27 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
                 current_frame = 0
 
                 for frame_batch in chunked(reader, batch_size):
+                    if self._abort:
+                        break
+
                     frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
+                    self.status.emit("Getting detections...")
                     new_detections = self.detect_identifiable_information(frame_buffer)
-                    args = [[frame, detections, self.parameters] for frame, detections in
-                            zip(frame_buffer, new_detections)]
+                    args = [
+                        [frame, detections, self.parameters] for frame, detections in zip(frame_buffer, new_detections)
+                    ]
+                    self.status.emit("Blurring and writing frames...")
                     for frame_blurred in blur_executor.map(blur_helper, args):
                         frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
                         writer.append_data(frame_blurred_rgb)
                     current_frame += batch_size
                     self.updateProgress.emit(current_frame)
+                    self.status.emit("Getting frames...")
+
+        self.status.emit("idle")
+        if self._abort:
+            self._abort = False
+            return
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):

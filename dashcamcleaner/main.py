@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 import inspect
+import re
 import sys
+import time
 from pathlib import Path
 
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit,
-    QMainWindow, QMessageBox, QRadioButton, QSpinBox
+    QApplication,
+    QComboBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QRadioButton,
+    QSpinBox,
 )
 from src.qt_wrapper import qtVideoBlurWrapper
 from src.ui_mainwindow import Ui_MainWindow
@@ -51,10 +60,14 @@ class MainWindow(QMainWindow):
         blur_wrapper.updateProgress.connect(self.setProgress)
         blur_wrapper.finished.connect(self.blur_wrapper_finished)
         blur_wrapper.alert.connect(self.blur_wrapper_alert)
+        blur_wrapper.status.connect(self.blur_wrapper_status)
         msg_box = QMessageBox()
         msg_box.setText(f"Successfully loaded {weights_name}.pt")
         msg_box.exec()
         return blur_wrapper
+
+    def blur_wrapper_status(self, message: str):
+        self.ui.label_status.setText(message)
 
     def blur_wrapper_alert(self, message: str):
         """
@@ -69,11 +82,10 @@ class MainWindow(QMainWindow):
         """
         Callback for button_abort
         """
-        self.force_blurrer_quit()
+        self.blur_wrapper.abort()
         self.ui.progress.setValue(0)
         self.ui.button_start.setEnabled(True)
         self.ui.button_abort.setEnabled(False)
-        self.setup_blurrer()
 
     def setProgress(self, value: int):
         """
@@ -90,7 +102,9 @@ class MainWindow(QMainWindow):
         self.ui.progress.setMaximum(value)
 
     def aggregate_parameters(self):
-        inference_size = int(self.ui.combo_box_scale.currentText()[:-1]) * 16 / 9
+        model_name = self.ui.combo_box_weights.currentText()
+        training_inference_size = int(re.search(r"(?P<imgsz>\d*)p\_", model_name).group("imgsz"))
+        inference_size = int(training_inference_size * 16 / 9)
         return {
             "input_path": self.ui.line_source.text(),
             "output_path": self.ui.line_target.text(),
@@ -104,6 +118,7 @@ class MainWindow(QMainWindow):
             "feather_edges": self.ui.spin_feather_edges.value(),
             "export_mask": False,
             "export_colored_mask": False,
+            "blur_workers": self.ui.spin_blur_workers.value(),
         }
 
     def button_start_clicked(self):
@@ -127,25 +142,15 @@ class MainWindow(QMainWindow):
         """
         Callback for button_source
         """
-        source_path, _ = QFileDialog.getOpenFileName(
-            self, "Open Video", "", "Video Files (*.mkv *.avi *.mov *.mp4)"
-        )
+        source_path, _ = QFileDialog.getOpenFileName(self, "Open Video", "", "Video Files (*.mkv *.avi *.mov *.mp4)")
         self.ui.line_source.setText(source_path)
 
     def button_target_clicked(self):
         """
         Callback for button_target
         """
-        target_path, _ = QFileDialog.getSaveFileName(self, "Save Video", "", "Video Files (*.mkv)")
+        target_path, _ = QFileDialog.getSaveFileName(self, "Save Video", "", "Video Files (*.mkv, *.mp4, *.mov)")
         self.ui.line_target.setText(target_path)
-
-    def force_blurrer_quit(self):
-        """
-        Force blurrer thread to quit
-        """
-        if self.blur_wrapper.isRunning():
-            self.blur_wrapper.terminate()
-            self.blur_wrapper.wait()
 
     def restore(self):
         """
@@ -196,9 +201,7 @@ class MainWindow(QMainWindow):
         if self.blur_wrapper and self.blur_wrapper.result["success"]:
             minutes = int(self.blur_wrapper.result["elapsed_time"] // 60)
             seconds = round(self.blur_wrapper.result["elapsed_time"] % 60)
-            msg_box.setText(
-                f"Video blurred successfully in {minutes} minutes and {seconds} seconds."
-            )
+            msg_box.setText(f"Video blurred successfully in {minutes} minutes and {seconds} seconds.")
         else:
             msg_box.setText("Blurring resulted in errors.")
         msg_box.exec()
@@ -243,9 +246,11 @@ class MainWindow(QMainWindow):
         Overload closeEvent to shut down blurrer and save UI settings
         :param event:
         """
-        self.force_blurrer_quit()
+        self.blur_wrapper.abort()
         self.save()
         print("saved settings")
+        while self.blur_wrapper.isRunning():
+            time.sleep(1)
         QMainWindow.closeEvent(self, event)
 
 
