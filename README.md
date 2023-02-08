@@ -66,13 +66,17 @@ Since OpenCV does not care about audio channels, ffmpeg is used to combine the e
    ```sh
    git clone https://github.com/tfaehse/DashcamCleaner.git
    ```
-2. Set up Python environment and install requisites
+2. Change into the directory 
+   ```sh
+   cd DashcamCleaner
+   ```
+3. Set up Python environment and install requisites
    ```sh
    conda create -n py38 python=3.8
    conda activate py38
    pip install -r requirements.txt
    ```
-3. Install ffmpeg binaries (release essentials is enough) and create an environment variable "FFMPEG_BINARY" that points to the ffmpeg.exe binary.
+4. Install ffmpeg binaries (release essentials is enough) and create an environment variable "FFMPEG_BINARY" that points to the ffmpeg.exe binary.
 <!-- USAGE EXAMPLES -->
 ## Usage
 On first launch, the YOLOv5 model is automatically downloaded and fused with the custom weights for face and plate detection from this repo.
