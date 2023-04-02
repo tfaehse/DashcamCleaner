@@ -14,7 +14,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class CLI:
-    def __init__(self, opt):
+    def __init__(self, opt) -> None:
         self.opt = opt
         self.sanitize_opts()
 
@@ -40,9 +40,9 @@ class CLI:
     def start_blurring(self):
         input_path, output_path = Path(self.opt.input_path), Path(self.opt.output_path)
         if input_path.is_dir():  # batch mode
-            for input_file in input_path.glob('*.*'):
-                opt.input_path = input_file.absolute()
-                opt.output_path = (output_path / input_file.name).absolute()
+            for input_file in sorted(input_path.glob('*.*')):
+                self.opt.input_path = input_file.absolute()
+                self.opt.output_path = (output_path / input_file.name).absolute()
                 self.start_blurring_file()
         else:
             self.start_blurring_file()
