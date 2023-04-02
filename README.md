@@ -27,7 +27,14 @@
         <li><a href="#installation-example-on-windows-using-conda">Installation example on Windows using Conda</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#desktop">Desktop</a></li>
+        <li><a href="#cli">CLI</a></li>
+        <li><a href="#container">Container</a></li>
+      </ul>
+    </li>
     <li><a href="#weights">Weights</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
@@ -75,6 +82,8 @@ Since OpenCV does not care about audio channels, ffmpeg is used to combine the e
 3. Install ffmpeg binaries (release essentials is enough) and create an environment variable "FFMPEG_BINARY" that points to the ffmpeg.exe binary.
 <!-- USAGE EXAMPLES -->
 ## Usage
+
+### Desktop
 On first launch, the YOLOv5 model is automatically downloaded and fused with the custom weights for face and plate detection from this repo.
 
 ![UI screenshot](img/ui_screenshot.jpg "Screenshot of the UI")
@@ -93,6 +102,8 @@ The blur size determines how strongly detected faces and license plates are blur
 Sometimes, a license plate might be missed for just one frame. This one frame, usually 1/30th of a second long, still means the license plate or face could easily be identified - a computationally very cheap (as opposed to increasing the inference scale) way to fix such false negatives can be the frame memory option. In essence, it blurs not only the detected boxes in the current frame, it also blurs regions that were detected in __n__ frames before. Especially in combination with ROI enlargement and videos without very quick movement, this method can hide away missed detections.
 
 For reference: even at 1080p inference, i.e. an inference scale of 1, a 1080p30fps video from my 70mai 1S processes at around 10 frames per second, a 1 minute clip takes ~3 minutes to blur on a 5820K/GTX1060 machine.
+
+# CLI
 
 There's now also a fairly simple CLI to blur a video:
 
@@ -188,20 +199,31 @@ optional arguments (advanced):
         Hint: turn off --feather_edges by setting -fe=0 and turn --quality to
         10
 ```
-For now, there are no default values and all parameters have to be provided (in order). There's also no progress bar yet, but there should be an error/success message as soon as blurring is finished/has encountered any issues.
 
-## Docker Usage
+
+### Container
 
 Batch processing videos inside a docker (or podman) container
 
 ```bash
+mkdir -p {input,output} # then place your video files in the input folder
+docker run -it --rm -v "$PWD/input:/input" -v "$PWD/output:/output" ghcr.io/tfaehse/dashcamcleaner:edge
+# to customize options, just use regular cli parameter:
+docker run -it --rm -v "$PWD/input:/input" -v "$PWD/output:/output" ghcr.io/tfaehse/dashcamcleaner:edge --weights 1080p_medium_mosaic --blur_size 25 --inference_size 1080 --quality 7 --batch_size 10
+```
+
+GPU Support:
+```bash
+# test driver works
+docker run -it --rm --gpus all nvidia/cuda:12.0.1-runtime-ubuntu22.04  nvidia-smi
+docker run -it --rm --gpus all -v "$PWD/input:/input" -v "$PWD/output:/output" ghcr.io/tfaehse/dashcamcleaner:edge
+# Output should contain "Using NVIDIA GeForce RTX xxxx.", not: "Using CPU."
+```
+
+Manual Docker Image Build:
+```bash
 git clone https://github.com/tfaehse/DashcamCleaner.git
 docker build --pull -t dashcamcleaner DashcamCleaner
-mkdir -p {input,output}
-# place your files in the input folder
-docker run -it --rm -v "$PWD/input:/input" -v "$PWD/output:/output" dashcamcleaner
-# to customize options, just use regular parameter:
-docker run -it --rm -v "$PWD/input:/input" -v "$PWD/output:/output" dashcamcleaner --weights 1080p_medium_mosaic
 ```
 
 <!-- WEIGHTS -->
