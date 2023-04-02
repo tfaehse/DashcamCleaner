@@ -40,7 +40,7 @@ class qtVideoBlurWrapper(QThread, VideoBlurrer):
         # gather inputs from self.parameters
         input_path = self.parameters["input_path"]
         output_file = Path(self.parameters["output_path"])
-        temp_output = output_file.parent / f"{output_file.stem}_copy.{output_file.suffix}"
+        temp_output = output_file.parent / f"{output_file.stem}_copy{output_file.suffix}"
         output_path = self.parameters["output_path"]
         threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
