@@ -54,6 +54,12 @@ class qtVideoBlurWrapper(VideoBlurrer, QThread):
         batch_size = self.parameters["batch_size"]
         blur_workers = min(self.parameters["blur_workers"], mp.cpu_count(), batch_size)
 
+        # prepare detection cache
+        frame_detections = {}
+
+        # customize detector
+        self.detector.conf = self.parameters["threshold"]
+
         # open video file
         with imageio.get_reader(input_path) as reader:
 
@@ -74,23 +80,29 @@ class qtVideoBlurWrapper(VideoBlurrer, QThread):
                 self.setMaximum.emit(length)
                 current_frame = 0
 
-                for frame_batch in chunked(reader, batch_size):
+                for batch_index, frame_batch in enumerate(chunked(reader, batch_size)):
                     if self._abort:
                         break
 
                     frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
                     self.status.emit("Getting detections...")
-                    new_detections = self.detect_identifiable_information(frame_buffer)
-                    args = [
-                        [frame, detections, self.parameters] for frame, detections in zip(frame_buffer, new_detections)
-                    ]
+                    for index, detection in enumerate(self.detect_identifiable_information(frame_buffer)):
+                        frame_detections[batch_size * batch_index + index] = detection
                     self.status.emit("Blurring and writing frames...")
+                    args = [
+                        [frame, global_index, frame_detections, self.parameters]
+                        for frame, global_index in
+                        zip(frame_buffer, [batch_size * batch_index + x for x in range(batch_size)])
+                    ]
                     for frame_blurred in blur_executor.map(blur_helper, args):
                         frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
                         writer.append_data(frame_blurred_rgb)
                     current_frame += batch_size
                     self.updateProgress.emit(current_frame)
                     self.status.emit("Getting frames...")
+
+            import json
+            pass
 
         self.status.emit("idle")
         if self._abort:

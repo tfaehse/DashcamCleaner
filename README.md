@@ -83,7 +83,7 @@ Since OpenCV does not care about audio channels, ffmpeg is used to combine the e
 ## Usage
 On first launch, the YOLOv8 model is automatically downloaded and fused with the custom weights for face and plate detection from this repo.
 
-![UI screenshot](img/ui_screenshot.jpg "Screenshot of the UI")
+![UI screenshot](img/ui_screenshot.png "Screenshot of the UI")
 
 The UI is fairly self-explanatory: To use the tool, you need to:
 - choose an input video file
@@ -105,7 +105,7 @@ For reference: even at 1080p inference, i.e. an inference scale of 1, a 1080p30f
 There's now also a fairly simple CLI to blur a video:
 
 ```
-usage: cli.py -i INPUT_PATH -o OUTPUT_PATH [-w WEIGHTS] [-bw BLUR_WORKERS] [-s [1, 1024]] [-b [1, 99]] [-t [0.0, 1.0]] [-r [0.0, 2.0]] [-q [1.0, 10.0]] [-fe [0, 99]] [-nf] [-m] [-mc] [-h]
+usage: cli.py -i INPUT_PATH -o OUTPUT_PATH [-w WEIGHTS] [-bw BLUR_WORKERS] [-s [1, 1024]] [-b [1, 99]] [-t [0.0, 1.0]] [-r [0.0, 2.0]] [-q [1.0, 10.0]] [-fe [0, 99]] [-nf] [-bm [0, 10]] [-m] [-mc] [-j] [-h]
 
 This tool allows you to automatically censor faces and number plates on dashcam footage.
 
@@ -153,6 +153,10 @@ optional arguments:
     --no_faces 
         Do not censor faces.
         
+    -bm [0, 10]  (Default: 0)
+    --blur_memory [0, 10]
+        Blur detected plates from n previous frames too in order to (maybe) cover up missed identifiable information
+        
     -h 
     --help 
         Show this help message and exit.
@@ -177,6 +181,10 @@ optional arguments (advanced):
         If the --threshold setting is larger than 0 then detections with a lower confidence are discarded.
         Channels; Red: Faces, Green: Numberplates.
         Hint: turn off --feather_edges by setting -fe=0 and turn --quality to 10
+        
+    -j   (Default: False)
+    --export_json 
+        Export detections (based on index) to a JSON file.
 ```
 
 
@@ -262,8 +270,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <!-- CONTACT -->
 ## Contact
-
-Thomas Fähse - tfaehse@me.com
 
 Project Link: [https://github.com/tfaehse/DashcamCleaner](https://github.com/tfaehse/DashcamCleaner)
 

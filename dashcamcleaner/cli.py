@@ -222,6 +222,16 @@ Not recommended for CPU usage.""",
         help="Do not censor faces.",
         default=False,
     )
+    optional.add_argument(
+        "-bm",
+        "--blur_memory",
+        required=False,
+        help="Blur detected plates from n previous frames too in order to (maybe) cover up missed identifiable information",
+        type=int,
+        metavar="[0, 10]",
+        choices=range(10 + 1),
+        default=0
+    )
     advanced.add_argument(
         "-m",
         "--export_mask",
@@ -241,6 +251,14 @@ Lower values mean less confidence, brighter colors mean more confidence.
 If the --threshold setting is larger than 0 then detections with a lower confidence are discarded.
 Channels; Red: Faces, Green: Numberplates.
 Hint: turn off --feather_edges by setting -fe=0 and turn --quality to 10""",
+        default=False,
+    )
+    advanced.add_argument(
+        "-j",
+        "--export_json",
+        action="store_true",
+        required=False,
+        help="Export detections (based on index) to a JSON file.",
         default=False,
     )
     optional.add_argument(
