@@ -13,7 +13,7 @@ from PySide6.QtCore import QThread, Signal
 from src.blurrer import VideoBlurrer, blur_helper
 
 
-class qtVideoBlurWrapper(QThread, VideoBlurrer):
+class qtVideoBlurWrapper(VideoBlurrer, QThread):
     setMaximum = Signal(int)
     updateProgress = Signal(int)
     alert = Signal(str)

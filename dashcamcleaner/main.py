@@ -149,7 +149,7 @@ class MainWindow(QMainWindow):
         """
         Callback for button_target
         """
-        target_path, _ = QFileDialog.getSaveFileName(self, "Save Video", "", "Video Files (*.mkv, *.mp4, *.mov)")
+        target_path, _ = QFileDialog.getSaveFileName(self, "Save Video", "", "Video Files (*.mkv *.mp4 *.mov)")
         self.ui.line_target.setText(target_path)
 
     def restore(self):
