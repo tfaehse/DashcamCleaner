@@ -39,7 +39,8 @@ class VideoBlurrer:
         :return: detected faces and plates
         """
         scale = self.parameters["inference_size"]
-        results_list = self.detector(images, imgsz=[scale])
+        threshold = self.parameters["threshold"]
+        results_list = self.detector(images, imgsz=[scale], conf=threshold)
         return [
             [
                 Detection(
@@ -61,7 +62,6 @@ class VideoBlurrer:
         output_file = Path(self.parameters["output_path"])
         temp_output = output_file.parent / f"{output_file.stem}_copy{output_file.suffix}"
         output_path = self.parameters["output_path"]
-        threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
         batch_size = self.parameters["batch_size"]
         blur_workers = min(self.parameters["blur_workers"], mp.cpu_count(), batch_size)

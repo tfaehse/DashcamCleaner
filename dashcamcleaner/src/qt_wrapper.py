@@ -50,13 +50,9 @@ class qtVideoBlurWrapper(VideoBlurrer, QThread):
         output_file = Path(self.parameters["output_path"])
         temp_output = output_file.parent / f"{output_file.stem}_copy{output_file.suffix}"
         output_path = self.parameters["output_path"]
-        threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
         batch_size = self.parameters["batch_size"]
         blur_workers = min(self.parameters["blur_workers"], mp.cpu_count(), batch_size)
-
-        # customize detector
-        self.detector.conf = threshold
 
         # open video file
         with imageio.get_reader(input_path) as reader:
