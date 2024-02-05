@@ -34,9 +34,7 @@ def setup_anonymizer(weights_path: str, obfuscation_parameters: str):
     if (box_kernel_size % 2) == 0:
         box_kernel_size += 1
 
-    obfuscator = Obfuscator(
-        kernel_size=int(kernel_size), sigma=float(sigma), box_kernel_size=int(box_kernel_size)
-    )
+    obfuscator = Obfuscator(kernel_size=int(kernel_size), sigma=float(sigma), box_kernel_size=int(box_kernel_size))
     detectors = {
         "face": Detector(kind="face", weights_path=get_weights_path(weights_path, kind="face")),
         "plate": Detector(kind="plate", weights_path=get_weights_path(weights_path, kind="plate")),
@@ -90,20 +88,14 @@ class TrainingDataGenerator:
         self.labeled_data_from_pictures(randomized_pictures[train_pictures:], label_format, "val")
 
         # train videos
-        for index, vid in enumerate(
-            tqdm(randomized_videos[:train_videos], desc="Processing training video file")
-        ):
+        for index, vid in enumerate(tqdm(randomized_videos[:train_videos], desc="Processing training video file")):
             self.labeled_data_from_video(vid, index, label_format, "train")
 
         # validate videos
-        for index, vid in enumerate(
-            tqdm(randomized_videos[train_videos:], desc="Processing validation video file")
-        ):
+        for index, vid in enumerate(tqdm(randomized_videos[train_videos:], desc="Processing validation video file")):
             self.labeled_data_from_video(vid, index, label_format, "val")
 
-    def labeled_data_from_video(
-        self, video_path: str, vid_num: int, label_format, folder_suffix, roi_multi=1.2
-    ):
+    def labeled_data_from_video(self, video_path: str, vid_num: int, label_format, folder_suffix, roi_multi=1.2):
         """
         Extract frames and labels from a video
         :param video_path: path to video
@@ -195,9 +187,7 @@ class TrainingDataGenerator:
                     height = group.iloc[0]["height"]
                     writer = Writer(image_path, width, height)
                     for _, row in group.iterrows():
-                        writer.addObject(
-                            row["type"], row["ymin"], row["xmin"], row["ymax"], row["xmax"]
-                        )
+                        writer.addObject(row["type"], row["ymin"], row["xmin"], row["ymax"], row["xmax"])
                     writer.save(os.path.join(label_path, os.path.splitext(name)[0] + ".xml"))
             elif label_format == "torch":
                 class_dict = {"plate": 0, "face": 1}
@@ -208,9 +198,7 @@ class TrainingDataGenerator:
         else:
             print("This video seems to contain no faces or plates whatsoever!")
 
-    def labeled_data_from_pictures(
-        self, picture_paths: str, label_format: str, folder_suffix: str, roi_multi=1.2
-    ):
+    def labeled_data_from_pictures(self, picture_paths: str, label_format: str, folder_suffix: str, roi_multi=1.2):
         """
         Extract frames and labels from a video
         :param picture_paths: paths to image files
@@ -282,9 +270,7 @@ class TrainingDataGenerator:
                     height = group.iloc[0]["height"]
                     writer = Writer(image_path, width, height)
                     for _, row in group.iterrows():
-                        writer.addObject(
-                            row["type"], row["ymin"], row["xmin"], row["ymax"], row["xmax"]
-                        )
+                        writer.addObject(row["type"], row["ymin"], row["xmin"], row["ymax"], row["xmax"])
                     writer.save(os.path.join(label_path, os.path.splitext(name)[0] + ".xml"))
             elif label_format == "torch":
                 class_dict = {"plate": 0, "face": 1}

@@ -1,4 +1,4 @@
-from src.bounds import Bounds
+from src.utils.bounds import Bounds
 
 
 class Detection:
@@ -11,6 +11,13 @@ class Detection:
         self.score = float(score)
         self.kind = kind
 
+    @classmethod
+    def from_row(cls, row):
+        bounds = Bounds(row["x_min"], row["y_min"], row["x_max"], row["y_max"])
+        score = row["score"] if "score" in row.keys() else 1.0
+        kind = row["class"]
+        return cls(bounds, score, kind)
+
     def get_scaled(self: "Detection", shape, multiplier) -> "Detection":
         result = Detection(self.bounds.scale(shape, multiplier), self.score, self.kind)
         return result
@@ -19,3 +26,6 @@ class Detection:
         if isinstance(other, Detection):
             return self.bounds == other.bounds and self.score == other.score and self.kind == other.kind
         return False
+
+    def dict_format(self):
+        return self.bounds.__dict__ | {"score": self.score, "class": self.kind}

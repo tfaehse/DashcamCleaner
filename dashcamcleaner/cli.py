@@ -6,9 +6,9 @@ import sys
 import textwrap
 from pathlib import Path
 from typing import Dict, List, Union
-import re
 
 from src.blurrer import VideoBlurrer
+from src.utils.progress_handler import CLIProgressHandler
 
 # makes it possible to interrupt while running in other thread
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -22,6 +22,7 @@ class CLI:
         """
         self.opt = opt
         self.sanitize_opts()
+        self.progress_handler = CLIProgressHandler()
 
     def sanitize_opts(self):
         """
@@ -62,22 +63,10 @@ class CLI:
         """
         Blur a single video file
         """
-        print("Start blurring video:", self.opt.input_path)
-        print("Blurring parameter:", vars(self.opt))
-
         # set up parameters
         parameters: Dict[str, Union[bool, int, float, str]] = vars(self.opt)  # convert opt to dict type
-
-        # read inference size
-        model_name: str = parameters["weights"]
-        training_inference_size: int = int(re.search(r"(?P<imgsz>\d*)p\_", model_name).group("imgsz"))
-        parameters["inference_size"] = int(training_inference_size * 16 / 9)
-
-        # setup blurrer
-        blurrer = VideoBlurrer(self.opt.weights, parameters)
-        blurrer.blur_video()
-
-        print("Blurred video successfully written to:", self.opt.output_path)
+        blurrer = VideoBlurrer(self.progress_handler, self.opt.weights, parameters)
+        blurrer.execute_pipeline()
 
 
 def parse_arguments():
@@ -125,14 +114,14 @@ def parse_arguments():
     required = parser.add_argument_group("required arguments")
     required.add_argument(
         "-i",
-        "--input_path",
+        "--input-path",
         required=True,
         help="Input video file path. Pass a folder name for batch processing all files in the folder.",
         type=str,
     )
     required.add_argument(
         "-o",
-        "--output_path",
+        "--output-path",
         required=True,
         help="Output video file path. Pass a folder name for batch processing.",
         type=str,
@@ -151,7 +140,7 @@ def parse_arguments():
     )
     optional.add_argument(
         "-bw",
-        "--blur_workers",
+        "--blur-workers",
         required=False,
         help="Amount of processes to use for blurring frames. (default = 2)",
         type=int,
@@ -159,7 +148,7 @@ def parse_arguments():
     )
     advanced.add_argument(
         "-s",
-        "--batch_size",
+        "--batch-size",
         help="""Inference batch size - large values require a lof of memory and may cause crashes!
 This will read multiple frames at the same time and perform detection on all of those at once.
 Not recommended for CPU usage.""",
@@ -169,7 +158,7 @@ Not recommended for CPU usage.""",
     )
     optional.add_argument(
         "-b",
-        "--blur_size",
+        "--blur-size",
         required=False,
         help="Kernel radius of the blurring-filter. Higher value means more blurring, 0 would mean no blurring at all.",
         type=int,
@@ -187,7 +176,7 @@ Not recommended for CPU usage.""",
     )
     optional.add_argument(
         "-r",
-        "--roi_multi",
+        "--roi-multi",
         required=False,
         help="Increase or decrease the area that will be blurred - 1.0 means no change.",
         type=float,
@@ -206,7 +195,7 @@ Not recommended for CPU usage.""",
     )
     optional.add_argument(
         "-fe",
-        "--feather_edges",
+        "--feather-edges",
         required=False,
         help="Feather edges of blurred areas, removes sharp edges on blur-mask. \nExpands mask by argument and blurs mask, so effective size is twice the argument.",
         type=int,
@@ -216,25 +205,15 @@ Not recommended for CPU usage.""",
     )
     optional.add_argument(
         "-nf",
-        "--no_faces",
+        "--no-faces",
         action="store_true",
         required=False,
         help="Do not censor faces.",
         default=False,
     )
-    optional.add_argument(
-        "-bm",
-        "--blur_memory",
-        required=False,
-        help="Blur detected plates from n previous frames too in order to (maybe) cover up missed identifiable information",
-        type=int,
-        metavar="[0, 10]",
-        choices=range(10 + 1),
-        default=0
-    )
     advanced.add_argument(
         "-m",
-        "--export_mask",
+        "--export-mask",
         action="store_true",
         required=False,
         help="Export a black and white only video of the blur-mask without applying it to the input clip.",
@@ -242,7 +221,7 @@ Not recommended for CPU usage.""",
     )
     advanced.add_argument(
         "-mc",
-        "--export_colored_mask",
+        "--export-colored-mask",
         action="store_true",
         required=False,
         help="""Export a colored mask video of the blur-mask without applying it to the input clip.
@@ -250,12 +229,30 @@ The value represents the confidence of the detector.
 Lower values mean less confidence, brighter colors mean more confidence.
 If the --threshold setting is larger than 0 then detections with a lower confidence are discarded.
 Channels; Red: Faces, Green: Numberplates.
-Hint: turn off --feather_edges by setting -fe=0 and turn --quality to 10""",
+Hint: turn off --feather-edges by setting -fe=0 and turn --quality to 10""",
         default=False,
     )
     advanced.add_argument(
+        "-td",
+        "--tracking-dist",
+        default=0.1,
+        type=float,
+        help="""Maximum pixel difference between subsequent frames for the tracker to associate a prediction with a 
+new detection. This is expressed in relation to the image height, e.g. 0.1 would mean 108 pixels for a FullHD video""",
+        metavar="[0.01, 0.99]",
+    )
+    advanced.add_argument(
+        "-tm",
+        "--tracking-memory",
+        default=3,
+        type=int,
+        help="""Max. length a valid track can be kept alive for if no new detections are processed. This value is used
+for both the forward and the backward pass of the tracking. Setting it to 0 disables the tracking.""",
+        metavar="[0, 10]",
+    )
+    advanced.add_argument(
         "-j",
-        "--export_json",
+        "--export-json",
         action="store_true",
         required=False,
         help="Export detections (based on index) to a JSON file.",
