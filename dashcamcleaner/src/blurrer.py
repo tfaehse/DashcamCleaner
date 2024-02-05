@@ -67,7 +67,7 @@ class VideoBlurrer:
         blur_workers = min(self.parameters["blur_workers"], mp.cpu_count(), batch_size)
 
         # customize detector
-        self.detector.conf = threshold
+        self.detector.conf = self.parameters["threshold"]
 
         # open video file
         with imageio.get_reader(input_path) as reader:
