@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>531</width>
-    <height>225</height>
+    <width>822</width>
+    <height>310</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -97,7 +97,7 @@
       <item>
        <widget class="QLabel" name="label_5">
         <property name="text">
-         <string>Detection threshold:</string>
+         <string>Detection threshold</string>
         </property>
        </widget>
       </item>
@@ -134,6 +134,20 @@
         </property>
         <property name="value">
          <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_10">
+        <property name="text">
+         <string>Blur memory</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="spin_memory">
+        <property name="maximum">
+         <number>10</number>
         </property>
        </widget>
       </item>

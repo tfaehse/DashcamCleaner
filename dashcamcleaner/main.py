@@ -119,6 +119,7 @@ class MainWindow(QMainWindow):
             "export_mask": False,
             "export_colored_mask": False,
             "blur_workers": self.ui.spin_blur_workers.value(),
+            "blur_memory": self.ui.spin_memory.value(),
         }
 
     def button_start_clicked(self):

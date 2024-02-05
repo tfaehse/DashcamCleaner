@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple, Union
 
 import cv2
 import imageio
+import json
 import numpy as np
 import torch
 from more_itertools import chunked
@@ -66,6 +67,9 @@ class VideoBlurrer:
         batch_size = self.parameters["batch_size"]
         blur_workers = min(self.parameters["blur_workers"], mp.cpu_count(), batch_size)
 
+        # prepare detection cache
+        frame_detections = {}
+
         # customize detector
         self.detector.conf = self.parameters["threshold"]
 
@@ -86,17 +90,23 @@ class VideoBlurrer:
             ) as writer:
 
                 with tqdm(total=length, desc="Processing video", unit="frames", dynamic_ncols=True) as progress_bar:
-                    for frame_batch in chunked(reader, batch_size):
+                    for batch_index, frame_batch in enumerate(chunked(reader, batch_size)):
                         frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
-                        new_detections: List[List[Detection]] = self.detect_identifiable_information(frame_buffer)
+                        for index, detection in enumerate(self.detect_identifiable_information(frame_buffer)):
+                            frame_detections[batch_size * batch_index + index] = detection
                         args = [
-                            [frame, detections, self.parameters]
-                            for frame, detections in zip(frame_buffer, new_detections)
+                            [frame, global_index, frame_detections, self.parameters]
+                            for frame, global_index in zip(frame_buffer, [batch_size * batch_index + x for x in range(batch_size)])
                         ]
                         for frame_blurred in blur_executor.map(blur_helper, args):
                             frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
                             writer.append_data(frame_blurred_rgb)
                         progress_bar.update(len(frame_batch))
+
+        # write out detections in yolo format
+        if self.parameters["export_json"]:
+            with open(Path(output_path).with_suffix(".json"), "w") as f:
+                json.dump(frame_detections, f, default=vars, indent=2)
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):
@@ -167,19 +177,17 @@ def blur_helper(args: Tuple[cv2.Mat, List[Detection], Dict]):
     :param args: List of apply_blur parameters
     :return: Blurred frame
     """
-
-    frame: cv2.Mat
-    new_detections: List[Detection]
     parameters: Dict
-    frame, new_detections, parameters = args
-    return apply_blur(frame, new_detections, parameters)
+    frame, index, detections_dict, parameters = args
+    return apply_blur(frame, index, detections_dict, parameters)
 
 
-def apply_blur(frame: cv2.Mat, new_detections: List[Detection], parameters: Dict):
+def apply_blur(frame: cv2.Mat, index: int, detection_dict: Dict, parameters: Dict):
     """
     Apply blur to regions of interests
     :param frame: input image
-    :param new_detections: list of newly detected faces and plates
+    :param index: global frame index for this frame
+    :param detection_dict: dictionary with all processed (up to the current batch) detections
     :return: processed image
     """
     # gather inputs from self.parameters
@@ -189,15 +197,19 @@ def apply_blur(frame: cv2.Mat, new_detections: List[Detection], parameters: Dict
     feather_dilate_size = parameters["feather_edges"]
     export_mask = parameters["export_mask"]
     export_colored_mask = parameters["export_colored_mask"]
+    blur_memory = parameters["blur_memory"]
 
-    detections: List[Detection] = []
-    for detection in new_detections:
+    # gather all detections for the current frame - and previous one in case of blur_memory > 0
+    detections = sum([detection_dict[index - x] for x in range(blur_memory + 1) if (index - x) in detection_dict], [])
+
+    filtered_detections = []
+    for detection in detections:
         if no_faces and detection.kind == "face":
             continue
-        detections.append(detection.get_scaled(frame.shape, roi_multi))
+        filtered_detections.append(detection.get_scaled(frame.shape, roi_multi))
 
     # early exit if there are no detections
-    if len(detections) < 1:
+    if len(filtered_detections) < 1:
         # there are no detections for this frame, leave early
         if export_mask or export_colored_mask:
             # if mask export, return empty mask
@@ -209,7 +221,7 @@ def apply_blur(frame: cv2.Mat, new_detections: List[Detection], parameters: Dict
     # mark all pixels that should be blurred
     blur_area = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
     mask_color = [1, 1, 1]
-    for detection in detections:
+    for detection in filtered_detections:
         bounds = detection.bounds.expand(frame.shape, feather_dilate_size)
         if detection.kind == "plate":
             cv2.rectangle(blur_area, bounds.pt1(), bounds.pt2(), color=mask_color, thickness=-1)
