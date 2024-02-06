@@ -1,6 +1,8 @@
 from math import floor, sqrt
 from typing import Tuple
 
+import numpy as np
+
 
 class Bounds:
     x_min: int
@@ -8,11 +10,11 @@ class Bounds:
     x_max: int
     y_max: int
 
-    def __init__(self: "Bounds", x_min: int, y_min: int, x_max: int, y_max: int):
-        self.x_min = int(x_min)
-        self.y_min = int(y_min)
-        self.x_max = int(x_max)
-        self.y_max = int(y_max)
+    def __init__(self: "Bounds", x: Tuple[int, int], y: Tuple[int, int]):
+        self.x_min = int(min(x))
+        self.y_min = int(min(y))
+        self.x_max = int(max(x))
+        self.y_max = int(max(y))
 
     def coords_as_slices(self):
         """
@@ -27,7 +29,7 @@ class Bounds:
         :return: position + radii
         """
         center_pos = (int((self.x_max + self.x_min) / 2), int((self.y_max + self.y_min) / 2))
-        axis_length = (int((self.x_max - self.x_min) / 2), int((self.y_max - self.y_min) / 2))
+        axis_length = (int(abs((self.x_max - self.x_min) / 2)), int(abs((self.y_max - self.y_min) / 2)))
         return center_pos, axis_length
 
     def pt1(self: "Bounds") -> Tuple[int, int]:
@@ -36,16 +38,19 @@ class Bounds:
     def pt2(self: "Bounds") -> Tuple[int, int]:
         return self.x_max, self.y_max
 
-    def expand(self: "Bounds", shape, amount: int) -> "Bounds":
-        frame_height, frame_width = shape[:2]
-
+    def expand(self: "Bounds", amount: int) -> "Bounds":
         scaled_detection = Bounds(
-            max(self.x_min - amount, 0),
-            max(self.y_min - amount, 0),
-            min(self.x_max + amount, frame_width),
-            min(self.y_max + amount, frame_height),
+            (self.x_min - amount, self.x_max + amount),
+            (self.y_min - amount, self.y_max + amount)
         )
         return scaled_detection
+
+    def clip(self, shape):
+        frame_height, frame_width = shape[:2]
+        return Bounds(
+            (np.clip(self.x_min, 0, frame_width), np.clip(self.x_max, 0, frame_width)),
+            (np.clip(self.y_min, 0, frame_height), np.clip(self.y_max, 0, frame_height))
+        )
 
     def scale(self: "Bounds", shape, multiplier) -> "Bounds":
         """
@@ -54,8 +59,6 @@ class Bounds:
         :param multiplier: multiplier to scale the detection with
         :return: scaled Boxs
         """
-        frame_height, frame_width = shape[:2]
-
         width = self.x_max - self.x_min
         height = self.y_max - self.y_min
 
@@ -65,11 +68,9 @@ class Bounds:
         y_min = self.y_min - ((sqrt(multiplier) - 1) * height) / 2
         y_max = self.y_max + ((sqrt(multiplier) - 1) * height) / 2
         scaled_detection = Bounds(
-            max(floor(x_min), 0),
-            max(floor(y_min), 0),
-            min(floor(x_max), frame_width),
-            min(floor(y_max), frame_height),
-        )
+            (floor(x_min), floor(x_max)),
+            (floor(y_min), floor(y_max))
+        ).clip(shape)
         return scaled_detection
 
     def __repr__(self):

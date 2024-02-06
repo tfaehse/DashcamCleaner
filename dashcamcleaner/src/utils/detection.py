@@ -13,7 +13,7 @@ class Detection:
 
     @classmethod
     def from_row(cls, row):
-        bounds = Bounds(row["x_min"], row["y_min"], row["x_max"], row["y_max"])
+        bounds = Bounds((row["x_min"], row["x_max"]), (row["y_min"], row["y_max"]))
         score = row["score"] if "score" in row.keys() else 1.0
         kind = row["class"]
         return cls(bounds, score, kind)

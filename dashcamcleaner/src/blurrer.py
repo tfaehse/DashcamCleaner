@@ -75,7 +75,7 @@ class VideoBlurrer:
         return [
             [
                 Detection(
-                    Bounds(int(box.xyxy[0][0]), int(box.xyxy[0][1]), int(box.xyxy[0][2]), int(box.xyxy[0][3])),
+                    Bounds((box.xyxy[0][0], box.xyxy[0][2]), (box.xyxy[0][1], box.xyxy[0][3])),
                     score=float(box.conf),
                     kind=result.names[int(box.cls)],
                 )
@@ -335,7 +335,7 @@ def apply_blur(frame: cv2.Mat, index: int, detection_dict: Dict, parameters: Dic
     blur_area = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
     mask_color = [1, 1, 1]
     for detection in filtered_detections:
-        bounds = detection.bounds.expand(frame.shape, feather_dilate_size)
+        bounds = detection.bounds.expand(feather_dilate_size).clip(frame.shape)
         if detection.kind == "plate":
             cv2.rectangle(blur_area, bounds.pt1(), bounds.pt2(), color=mask_color, thickness=-1)
         elif detection.kind == "face":
