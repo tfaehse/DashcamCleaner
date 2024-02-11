@@ -74,8 +74,8 @@ Since OpenCV does not care about audio channels, ffmpeg is used to combine the e
    ```
 2. Set up Python environment and install requisites
    ```sh
-   conda create -n py38 python=3.8
-   conda activate py38
+   conda create -n dcc python=3.11
+   conda activate dcc
    pip install -r requirements.txt
    ```
 3. Install ffmpeg binaries (release essentials is enough) and create an environment variable "FFMPEG_BINARY" that points to the ffmpeg.exe binary.
@@ -105,17 +105,18 @@ For reference: even at 1080p inference, i.e. an inference scale of 1, a 1080p30f
 There's now also a fairly simple CLI to blur a video:
 
 ```
-usage: cli.py -i INPUT_PATH -o OUTPUT_PATH [-w WEIGHTS] [-bw BLUR_WORKERS] [-s [1, 1024]] [-b [1, 99]] [-t [0.0, 1.0]] [-r [0.0, 2.0]] [-q [1.0, 10.0]] [-fe [0, 99]] [-nf] [-bm [0, 10]] [-m] [-mc] [-j] [-h]
+usage: cli.py -i INPUT_PATH -o OUTPUT_PATH [-w WEIGHTS] [-bw BLUR_WORKERS] [-s [1, 1024]] [-b [1, 99]] [-t [0.0, 1.0]] [-r [0.0, 2.0]] [-q [1.0, 10.0]] [-fe [0, 99]] [-nf] [-m] [-mc] [-td [0.01, 0.99]]
+              [-tm [0, 10]] [-j] [-h]
 
 This tool allows you to automatically censor faces and number plates on dashcam footage.
 
 required arguments:
     -i INPUT_PATH
-    --input_path INPUT_PATH
+    --input-path INPUT_PATH
         Input video file path. Pass a folder name for batch processing all files in the folder.
         
     -o OUTPUT_PATH
-    --output_path OUTPUT_PATH
+    --output-path OUTPUT_PATH
         Output video file path. Pass a folder name for batch processing.
         
 
@@ -125,11 +126,11 @@ optional arguments:
         Weights file to use. See readme for the differences. (default = 720p_medium_mosaic).
         
     -bw BLUR_WORKERS  (Default: 2)
-    --blur_workers BLUR_WORKERS
+    --blur-workers BLUR_WORKERS
         Amount of processes to use for blurring frames. (default = 2)
         
     -b [1, 99]  (Default: 9)
-    --blur_size [1, 99]
+    --blur-size [1, 99]
         Kernel radius of the blurring-filter. Higher value means more blurring, 0 would mean no blurring at all.
         
     -t [0.0, 1.0]  (Default: 0.4)
@@ -137,7 +138,7 @@ optional arguments:
         Detection threshold. Higher value means more certainty, lower value means more blurring. This setting affects runtime, a lower threshold means slower execution times.
         
     -r [0.0, 2.0]  (Default: 1.0)
-    --roi_multi [0.0, 2.0]
+    --roi-multi [0.0, 2.0]
         Increase or decrease the area that will be blurred - 1.0 means no change.
         
     -q [1.0, 10.0]  (Default: 10)
@@ -145,17 +146,13 @@ optional arguments:
         Quality of the resulting video. higher = better. Conversion to crf: ⌊(1-q/10)*51⌋.
         
     -fe [0, 99]  (Default: 5)
-    --feather_edges [0, 99]
+    --feather-edges [0, 99]
         Feather edges of blurred areas, removes sharp edges on blur-mask. 
         Expands mask by argument and blurs mask, so effective size is twice the argument.
         
     -nf   (Default: False)
-    --no_faces 
+    --no-faces 
         Do not censor faces.
-        
-    -bm [0, 10]  (Default: 0)
-    --blur_memory [0, 10]
-        Blur detected plates from n previous frames too in order to (maybe) cover up missed identifiable information
         
     -h 
     --help 
@@ -164,26 +161,36 @@ optional arguments:
 
 optional arguments (advanced):
     -s [1, 1024]  (Default: 2)
-    --batch_size [1, 1024]
+    --batch-size [1, 1024]
         Inference batch size - large values require a lof of memory and may cause crashes!
         This will read multiple frames at the same time and perform detection on all of those at once.
         Not recommended for CPU usage.
         
     -m   (Default: False)
-    --export_mask 
+    --export-mask 
         Export a black and white only video of the blur-mask without applying it to the input clip.
         
     -mc   (Default: False)
-    --export_colored_mask 
+    --export-colored-mask 
         Export a colored mask video of the blur-mask without applying it to the input clip.
         The value represents the confidence of the detector.
         Lower values mean less confidence, brighter colors mean more confidence.
         If the --threshold setting is larger than 0 then detections with a lower confidence are discarded.
         Channels; Red: Faces, Green: Numberplates.
-        Hint: turn off --feather_edges by setting -fe=0 and turn --quality to 10
+        Hint: turn off --feather-edges by setting -fe=0 and turn --quality to 10
+        
+    -td [0.01, 0.99]  (Default: 0.1)
+    --tracking-dist [0.01, 0.99]
+        Maximum pixel difference between subsequent frames for the tracker to associate a prediction with a 
+        new detection. This is expressed in relation to the image height, e.g. 0.1 would mean 108 pixels for a FullHD video
+        
+    -tm [0, 10]  (Default: 3)
+    --tracking-memory [0, 10]
+        Max. length a valid track can be kept alive for if no new detections are processed. This value is used
+        for both the forward and the backward pass of the tracking. Setting it to 0 disables the tracking.
         
     -j   (Default: False)
-    --export_json 
+    --export-json 
         Export detections (based on index) to a JSON file.
 ```
 
@@ -246,6 +253,7 @@ With the transition to a custom YOLOv8 detector, the original targets for the to
 Implemented post processing steps:
 - ~~a "frame memory": plate and face positions from the last n frames are also blurred → useful for static plates/faces~~ removed because frames are processed in parallel now
 - enlarging of blurred regions
+- tracking detections in time, forward and backward, to fill gaps from the detector
 
 
 <!-- CONTRIBUTING -->

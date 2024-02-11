@@ -7,18 +7,11 @@ from pathlib import Path
 
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
-    QApplication,
-    QComboBox,
-    QDoubleSpinBox,
-    QFileDialog,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QRadioButton,
-    QSpinBox,
+    QApplication, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit, QMainWindow, QMessageBox, QRadioButton, QSpinBox
 )
 from src.qt_wrapper import qtVideoBlurWrapper
-from src.ui_mainwindow import Ui_MainWindow
+from src.ui.ui_mainwindow import Ui_MainWindow
+from src.utils.progress_handler import QtProgressHandler
 
 
 class MainWindow(QMainWindow):
@@ -34,12 +27,16 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.restore()
         self.load_weights_options()
-        self.blur_wrapper = self.setup_blurrer()
+        self.blur_wrapper = qtVideoBlurWrapper(QtProgressHandler)
+        self.blur_wrapper.update.connect(self.updateProgress)
+        self.blur_wrapper.init.connect(self.initProgress)
+        self.blur_wrapper.finish.connect(self.finishProgress)
+        self.blur_wrapper.finished.connect(self.blur_wrapper_finished)
+
         self.ui.button_source.clicked.connect(self.button_source_clicked)
         self.ui.button_start.clicked.connect(self.button_start_clicked)
         self.ui.button_target.clicked.connect(self.button_target_clicked)
         self.ui.button_abort.clicked.connect(self.button_abort_clicked)
-        self.ui.combo_box_weights.currentIndexChanged.connect(self.setup_blurrer)
 
     def load_weights_options(self):
         self.ui.combo_box_weights.clear()
@@ -48,23 +45,6 @@ class MainWindow(QMainWindow):
         assert len(available_weights_files) > 0, "There has to be at least one .pt file in dashcamcleaner/weights"
         for net_path in available_weights_files:
             self.ui.combo_box_weights.addItem(net_path.stem)
-
-    def setup_blurrer(self):
-        """
-        Create and connect a blurrer thread
-        """
-        weights_name = self.ui.combo_box_weights.currentText()
-        init_params = self.aggregate_parameters()
-        blur_wrapper = qtVideoBlurWrapper(weights_name, init_params)
-        blur_wrapper.setMaximum.connect(self.setMaximumValue)
-        blur_wrapper.updateProgress.connect(self.setProgress)
-        blur_wrapper.finished.connect(self.blur_wrapper_finished)
-        blur_wrapper.alert.connect(self.blur_wrapper_alert)
-        blur_wrapper.status.connect(self.blur_wrapper_status)
-        msg_box = QMessageBox()
-        msg_box.setText(f"Successfully loaded {weights_name}.pt")
-        msg_box.exec()
-        return blur_wrapper
 
     def blur_wrapper_status(self, message: str):
         self.ui.label_status.setText(message)
@@ -83,23 +63,27 @@ class MainWindow(QMainWindow):
         Callback for button_abort
         """
         self.blur_wrapper.abort()
-        self.ui.progress.setValue(0)
         self.ui.button_start.setEnabled(True)
         self.ui.button_abort.setEnabled(False)
 
-    def setProgress(self, value: int):
+    def updateProgress(self, value: int):
         """
         Set progress bar's current progress
         :param value: progress to be set
         """
         self.ui.progress.setValue(value)
 
-    def setMaximumValue(self, value: int):
+    def initProgress(self, len: int, unit: str, desc: str):
         """
         Set progress bar's maximum value
         :param value: value to be set
         """
-        self.ui.progress.setMaximum(value)
+        self.ui.progress.setMaximum(len)
+        self.ui.label_status.setText(desc)
+
+    def finishProgress(self):
+        self.ui.label_status.setText("idle")
+        self.ui.progress.setValue(0)
 
     def aggregate_parameters(self):
         model_name = self.ui.combo_box_weights.currentText()
@@ -119,7 +103,9 @@ class MainWindow(QMainWindow):
             "export_mask": False,
             "export_colored_mask": False,
             "blur_workers": self.ui.spin_blur_workers.value(),
-            "blur_memory": self.ui.spin_memory.value(),
+            "tracking_memory": self.ui.spin_memory.value(),
+            "tracking_dist": self.ui.double_spin_tracking_dist.value(),
+            "weights": model_name,
         }
 
     def button_start_clicked(self):
@@ -133,7 +119,7 @@ class MainWindow(QMainWindow):
         # set up parameters
         parameters = self.aggregate_parameters()
         if self.blur_wrapper:
-            self.blur_wrapper.parameters = parameters
+            self.blur_wrapper.set_params(parameters)
             self.blur_wrapper.start()
         else:
             print("No blurrer object!")
@@ -204,10 +190,9 @@ class MainWindow(QMainWindow):
             seconds = round(self.blur_wrapper.result["elapsed_time"] % 60)
             msg_box.setText(f"Video blurred successfully in {minutes} minutes and {seconds} seconds.")
         else:
-            msg_box.setText("Blurring resulted in errors.")
+            msg_box.setText(f"Blurring resulted in errors:\n{self.blur_wrapper.blurrer.error}")
+            self.blur_wrapper.blurrer._abort = False
         msg_box.exec()
-        if not self.blur_wrapper:
-            self.setup_blurrer()
         self.ui.button_start.setEnabled(True)
         self.ui.button_abort.setEnabled(False)
         self.ui.progress.setValue(0)

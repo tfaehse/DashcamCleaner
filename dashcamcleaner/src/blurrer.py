@@ -1,5 +1,8 @@
+import ast
+import json
 import multiprocessing as mp
 import os
+import re
 import subprocess
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -8,31 +11,59 @@ from typing import Dict, List, Tuple, Union
 
 import cv2
 import imageio
-import json
 import numpy as np
+import pandas as pd
 import torch
 from more_itertools import chunked
-from src.bounds import Bounds
-from src.detection import Detection
-from tqdm import tqdm
+from src.tracking import BoxTracker
+from src.utils.bounds import Bounds
+from src.utils.detection import Detection
+from src.utils.progress_handler import ProgressHandler
+from src.utils.utils import get_video_information
 from ultralytics import YOLO
+
+
+def run_if_alive(fn):
+    """
+    Decorator to only execute fn when self._abort is not set
+    :param fn: function to decorate
+    :return: fn if abort is not set
+    """
+
+    def decorator(self, *args, **kwargs):
+        if self._abort is True:
+            return
+        return fn(self, *args, **kwargs)
+
+    return decorator
 
 
 class VideoBlurrer:
     """
     Video blurrer class
     """
-    def __init__(self: "VideoBlurrer", weights_name: str, parameters: Dict[str, Union[bool, int, float, str]]) -> None:
+
+    def __init__(
+        self: "VideoBlurrer",
+        progress_handler: ProgressHandler,
+        weights_name: str,
+        parameters: Dict[str, Union[bool, int, float, str]],
+    ) -> None:
         """
         Constructor
         :param weights_name: file name of the weights to be used
+        :param progress_handler: handler for reporting progress to the user
         :param parameters: all relevant paremeters for the blurring process
         """
         self.parameters = parameters
         weights_path = Path(__file__).resolve().parents[1] / "weights" / f"{weights_name}.pt".replace(".pt.pt", ".pt")
-        self.detector = setup_detector(weights_path)
+        self.device, self.detector = self.setup_detector(weights_path)
+        self.progress_handler = progress_handler
+        self._abort = False
+        self.error = ""
         print("Worker created")
 
+    @run_if_alive
     def detect_identifiable_information(self: "VideoBlurrer", images: list) -> List[List[Detection]]:
         """
         Run plate and face detection on an input image
@@ -40,42 +71,129 @@ class VideoBlurrer:
         :return: detected faces and plates
         """
         scale = self.parameters["inference_size"]
-        threshold = self.parameters["threshold"]
-        results_list = self.detector(images, imgsz=[scale], conf=threshold)
+        results_list = self.detector(images, imgsz=[scale], verbose=False, conf=self.detector.conf, device=self.device)
         return [
             [
                 Detection(
-                    Bounds(int(box.xyxy[0][0]), int(box.xyxy[0][1]), int(box.xyxy[0][2]), int(box.xyxy[0][3])),
+                    Bounds((box.xyxy[0][0], box.xyxy[0][2]), (box.xyxy[0][1], box.xyxy[0][3])),
                     score=float(box.conf),
-                    kind="plate" if int(box.cls) == 0 else "face",
+                    kind=result.names[int(box.cls)],
                 )
                 for box in result.boxes
             ]
             for result in results_list
         ]
 
-    def blur_video(self):
+    @run_if_alive
+    def run_detection(self):
+        """
+        Run detector on all frames of the input video
+        :return: dataframe containing all detections
+        """
+        # gather inputs from self.parameters
+        input_path = self.parameters["input_path"]
+        threshold = self.parameters["threshold"]
+        batch_size = self.parameters["batch_size"]
+
+        # prepare detection cache
+        frame_detections = []
+
+        # customize detector
+        self.detector.conf = threshold
+
+        # open video file
+        with imageio.get_reader(input_path) as reader:
+            # get the height and width of each frame for future debug outputs on frame
+            meta = reader.get_meta_data()
+            fps = meta["fps"]
+            duration = meta["duration"]
+            length = int(duration * fps)
+            self.progress_handler.init(len=length, unit="frames", desc="Detecting plates and faces...")
+
+            # save the video to a file
+            for batch_index, frame_batch in enumerate(chunked(reader, batch_size)):
+                if self._abort:
+                    break
+                frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
+                for index, detection in enumerate(self.detect_identifiable_information(frame_buffer)):
+                    frame_detections += [
+                        {"frame": batch_size * batch_index + index} | det.dict_format() for det in detection
+                    ]
+                self.progress_handler.update(len(frame_batch))
+            self.progress_handler.finish()
+        return pd.DataFrame(frame_detections)
+
+    def execute_pipeline(self):
+        """
+        Execute the entire blurring pipeline
+        """
+        # set up parameters
+        video_meta = get_video_information(self.parameters["input_path"])
+
+        # read inference size
+        model_name: str = self.parameters["weights"]
+        training_inference_size: int = int(re.search(r"(?P<imgsz>\d*)p\_", model_name).group("imgsz"))
+        self.parameters["inference_size"] = int(training_inference_size * 16 / 9)
+
+        # run blurrer
+        detections = self.run_detection()
+        tracking_results = self.track_detections(video_meta, detections)
+        if self.parameters["export_json"]:
+            self.write_json_dets(tracking_results)
+
+        self.write_video(tracking_results)
+
+    @run_if_alive
+    def write_json_dets(self, tracks):
+        """
+        Write tracking results into a simple JSON file
+        :param tracks: dataframe with all tracks
+        """
+        out = {}
+        for frame, obs in tracks.reset_index().groupby("frame"):
+            out[frame] = ast.literal_eval(obs.drop(["frame", "index"], axis=1).to_json(orient="records"))
+        with open(Path(self.parameters["output_path"]).with_suffix(".json"), "w") as f:
+            json.dump(out, f, indent=2)
+
+    @run_if_alive
+    def track_detections(self, video_meta: dict, detections: pd.DataFrame):
+        """
+        Run tracking on raw detections
+        :param detections: input detections for all frames
+        :return: forward and backward tracking results
+        """
+        max_distance = int(video_meta["size"][1] * self.parameters["tracking_dist"])
+        tracker = BoxTracker(max_distance, self.parameters["tracking_memory"], self.parameters["tracking_memory"])
+        forward_tracking = tracker.run_forward_tracking(detections, self.progress_handler)
+        backward_tracking = tracker.run_backward_tracking(forward_tracking, self.progress_handler)
+        return backward_tracking
+
+    @run_if_alive
+    def write_video(self, tracks: pd.DataFrame):
         """
         Write a copy of the input video stripped of identifiable information, i.e. faces and license plates
+        :param tracks: tracks of detected boxes
         """
         # gather inputs from self.parameters
         input_path = self.parameters["input_path"]
         output_file = Path(self.parameters["output_path"])
         temp_output = output_file.parent / f"{output_file.stem}_copy{output_file.suffix}"
-        output_path = self.parameters["output_path"]
+        threshold = self.parameters["threshold"]
         quality = self.parameters["quality"]
         batch_size = self.parameters["batch_size"]
         blur_workers = min(self.parameters["blur_workers"], mp.cpu_count(), batch_size)
 
         # prepare detection cache
-        frame_detections = {}
+        track_cache = {
+            frame: [Detection.from_row(row) for _, row in tracks.loc[tracks["frame"] == frame].iterrows()]
+            for frame in range(tracks["frame"].max())
+        }
 
         # customize detector
-        self.detector.conf = self.parameters["threshold"]
+        self.detector.conf = threshold
 
         # open video file
         with imageio.get_reader(input_path) as reader:
-
             # get the height and width of each frame for future debug outputs on frame
             meta = reader.get_meta_data()
             fps = meta["fps"]
@@ -88,25 +206,22 @@ class VideoBlurrer:
             with imageio.get_writer(
                 temp_output, codec="libx264", fps=fps, quality=quality, macro_block_size=None
             ) as writer:
-
-                with tqdm(total=length, desc="Processing video", unit="frames", dynamic_ncols=True) as progress_bar:
-                    for batch_index, frame_batch in enumerate(chunked(reader, batch_size)):
-                        frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
-                        for index, detection in enumerate(self.detect_identifiable_information(frame_buffer)):
-                            frame_detections[batch_size * batch_index + index] = detection
-                        args = [
-                            [frame, global_index, frame_detections, self.parameters]
-                            for frame, global_index in zip(frame_buffer, [batch_size * batch_index + x for x in range(batch_size)])
-                        ]
-                        for frame_blurred in blur_executor.map(blur_helper, args):
-                            frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
-                            writer.append_data(frame_blurred_rgb)
-                        progress_bar.update(len(frame_batch))
-
-        # write out detections in yolo format
-        if self.parameters["export_json"]:
-            with open(Path(output_path).with_suffix(".json"), "w") as f:
-                json.dump(frame_detections, f, default=vars, indent=2)
+                self.progress_handler.init(len=length, unit="frames", desc="Writing blurred video...")
+                for batch_index, frame_batch in enumerate(chunked(reader, batch_size)):
+                    if self._abort:
+                        break
+                    frame_buffer = [cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB) for frame_read in frame_batch]
+                    args = [
+                        [frame, global_index, track_cache, self.parameters]
+                        for frame, global_index in zip(
+                            frame_buffer, [batch_size * batch_index + x for x in range(batch_size)]
+                        )
+                    ]
+                    for frame_blurred in blur_executor.map(blur_helper, args):
+                        frame_blurred_rgb = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2RGB)
+                        writer.append_data(frame_blurred_rgb)
+                    self.progress_handler.update(len(frame_batch))
+        self.progress_handler.finish()
 
         # copy over audio stream from original video to edited video
         if is_installed("ffmpeg"):
@@ -135,7 +250,7 @@ class VideoBlurrer:
                     "-map",
                     "1:1",
                     "-shortest",
-                    output_path,
+                    output_file,
                 ],
                 stdout=subprocess.DEVNULL,
             )
@@ -143,25 +258,24 @@ class VideoBlurrer:
             try:
                 os.remove(temp_output)
             except Exception as e:
-                self.alert.emit(
-                    f"Could not delete temporary, muted video. Maybe another process (like a cloud storage service or antivirus) is using it already.\n{str(e)}"
-                )
+                self.error = f"Could not delete temporary, muted video. Maybe another process (like a cloud storage service or antivirus) is using it already.\n{str(e)}"
         else:
-            os.rename(temp_output, output_path)
+            os.rename(temp_output, output_file)
 
-
-def setup_detector(weights_path: str):
-    """
-    Load YOLOv8 detector and update the detector with this repo's weights
-    :param weights_path: path to .pt file with this repo's weights
-    :return: initialized yolov8 detector
-    """
-    model = YOLO(weights_path)
-    if torch.cuda.is_available():
-        print(f"Using {torch.cuda.get_device_name(torch.cuda.current_device())}.")
-    else:
-        print("Using CPU.")
-    return model
+    def setup_detector(self, weights_path: str):
+        """
+        Load YOLOv8 detector and update the detector with this repo's weights
+        :param weights_path: path to .pt file with this repo's weights
+        :return: initialized yolov8 detector
+        """
+        model = YOLO(weights_path)
+        device = "cpu"
+        if torch.cuda.is_available():
+            device = torch.cuda.get_device_name(torch.cuda.current_device())
+        elif torch.backends.mps.is_available():
+            device = "mps"
+        print(f"Using {device}.")
+        return device, model
 
 
 def is_installed(name):
@@ -197,10 +311,9 @@ def apply_blur(frame: cv2.Mat, index: int, detection_dict: Dict, parameters: Dic
     feather_dilate_size = parameters["feather_edges"]
     export_mask = parameters["export_mask"]
     export_colored_mask = parameters["export_colored_mask"]
-    blur_memory = parameters["blur_memory"]
 
-    # gather all detections for the current frame - and previous one in case of blur_memory > 0
-    detections = sum([detection_dict[index - x] for x in range(blur_memory + 1) if (index - x) in detection_dict], [])
+    # gather all detections for the current frame
+    detections = detection_dict.get(index, [])
 
     filtered_detections = []
     for detection in detections:
@@ -222,7 +335,7 @@ def apply_blur(frame: cv2.Mat, index: int, detection_dict: Dict, parameters: Dic
     blur_area = np.full((frame.shape[0], frame.shape[1], 3), 0, dtype=np.float64)
     mask_color = [1, 1, 1]
     for detection in filtered_detections:
-        bounds = detection.bounds.expand(frame.shape, feather_dilate_size)
+        bounds = detection.bounds.expand(feather_dilate_size).clip(frame.shape)
         if detection.kind == "plate":
             cv2.rectangle(blur_area, bounds.pt1(), bounds.pt2(), color=mask_color, thickness=-1)
         elif detection.kind == "face":

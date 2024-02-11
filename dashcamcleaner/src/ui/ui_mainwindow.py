@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# flake8: noqa
+
 ################################################################################
 ## Form generated from reading UI file 'mainwindow.ui'
 ##
@@ -24,7 +24,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(822, 310)
+        MainWindow.resize(888, 310)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -107,20 +107,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.double_spin_threshold)
 
-        self.label_6 = QLabel(self.centralwidget)
-        self.label_6.setObjectName(u"label_6")
-
-        self.horizontalLayout_3.addWidget(self.label_6)
-
-        self.double_spin_roimulti = QDoubleSpinBox(self.centralwidget)
-        self.double_spin_roimulti.setObjectName(u"double_spin_roimulti")
-        self.double_spin_roimulti.setMinimum(0.800000000000000)
-        self.double_spin_roimulti.setMaximum(10.000000000000000)
-        self.double_spin_roimulti.setSingleStep(0.050000000000000)
-        self.double_spin_roimulti.setValue(1.000000000000000)
-
-        self.horizontalLayout_3.addWidget(self.double_spin_roimulti)
-
         self.label_10 = QLabel(self.centralwidget)
         self.label_10.setObjectName(u"label_10")
 
@@ -129,8 +115,22 @@ class Ui_MainWindow(object):
         self.spin_memory = QSpinBox(self.centralwidget)
         self.spin_memory.setObjectName(u"spin_memory")
         self.spin_memory.setMaximum(10)
+        self.spin_memory.setValue(3)
 
         self.horizontalLayout_3.addWidget(self.spin_memory)
+
+        self.label_11 = QLabel(self.centralwidget)
+        self.label_11.setObjectName(u"label_11")
+
+        self.horizontalLayout_3.addWidget(self.label_11)
+
+        self.double_spin_tracking_dist = QDoubleSpinBox(self.centralwidget)
+        self.double_spin_tracking_dist.setObjectName(u"double_spin_tracking_dist")
+        self.double_spin_tracking_dist.setMinimum(0.010000000000000)
+        self.double_spin_tracking_dist.setMaximum(0.990000000000000)
+        self.double_spin_tracking_dist.setSingleStep(0.010000000000000)
+
+        self.horizontalLayout_3.addWidget(self.double_spin_tracking_dist)
 
         self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -194,6 +194,20 @@ class Ui_MainWindow(object):
         self.spin_quality.setValue(5)
 
         self.horizontalLayout_4.addWidget(self.spin_quality)
+
+        self.label_6 = QLabel(self.centralwidget)
+        self.label_6.setObjectName(u"label_6")
+
+        self.horizontalLayout_4.addWidget(self.label_6)
+
+        self.double_spin_roimulti = QDoubleSpinBox(self.centralwidget)
+        self.double_spin_roimulti.setObjectName(u"double_spin_roimulti")
+        self.double_spin_roimulti.setMinimum(0.800000000000000)
+        self.double_spin_roimulti.setMaximum(10.000000000000000)
+        self.double_spin_roimulti.setSingleStep(0.050000000000000)
+        self.double_spin_roimulti.setValue(1.000000000000000)
+
+        self.horizontalLayout_4.addWidget(self.double_spin_roimulti)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -272,12 +286,13 @@ class Ui_MainWindow(object):
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"Blur size", None))
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"Feather edges", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Detection threshold", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"ROI enlargement", None))
-        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Blur memory", None))
+        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Tracking memory", None))
+        self.label_11.setText(QCoreApplication.translate("MainWindow", u"Max. tracking distance", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Model", None))
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"Batch size", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Blur workers", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Output Quality", None))
+        self.label_6.setText(QCoreApplication.translate("MainWindow", u"ROI enlargement", None))
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Status", None))
