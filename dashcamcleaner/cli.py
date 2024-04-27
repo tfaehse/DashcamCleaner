@@ -145,9 +145,9 @@ def parse_arguments():
         "-w",
         "--weights",
         required=False,
-        help="Weights file to use. See readme for the differences. (default = 720p_medium_mosaic).",
+        help="Weights file to use. See readme for the differences. (default = 1080p_medium_v8).",
         type=str,
-        default="720p_medium_mosaic",
+        default="1080p_medium_v8",
     )
     optional.add_argument(
         "-bw",
