@@ -15,7 +15,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QDoubleSpinBox, QFrame,
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFrame,
     QHBoxLayout, QLabel, QLineEdit, QMainWindow,
     QProgressBar, QPushButton, QSizePolicy, QSpacerItem,
     QSpinBox, QVBoxLayout, QWidget)
@@ -195,6 +195,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.spin_quality)
 
+        self.check_no_faces = QCheckBox(self.centralwidget)
+        self.check_no_faces.setObjectName(u"check_no_faces")
+
+        self.horizontalLayout_4.addWidget(self.check_no_faces)
+
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_4.addItem(self.horizontalSpacer)
@@ -278,6 +283,7 @@ class Ui_MainWindow(object):
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"Batch size", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Blur workers", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Output Quality", None))
+        self.check_no_faces.setText(QCoreApplication.translate("MainWindow", u"No faces", None))
         self.button_start.setText(QCoreApplication.translate("MainWindow", u"Start", None))
         self.button_abort.setText(QCoreApplication.translate("MainWindow", u"Abort", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Status", None))

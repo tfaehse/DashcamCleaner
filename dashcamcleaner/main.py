@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFileDialog,
@@ -114,7 +115,7 @@ class MainWindow(QMainWindow):
             "inference_size": inference_size,
             "quality": self.ui.spin_quality.value(),
             "batch_size": self.ui.spin_batch.value(),
-            "no_faces": False,
+            "no_faces": self.ui.check_no_faces.isChecked(),
             "feather_edges": self.ui.spin_feather_edges.value(),
             "export_mask": False,
             "export_colored_mask": False,
@@ -181,6 +182,12 @@ class MainWindow(QMainWindow):
                 value = self.settings.value(name)
                 if value and value == "true":  # ouch...
                     obj.setChecked(True)
+                    
+            if isinstance(obj, QCheckBox):
+                name = obj.objectName()
+                value = self.settings.value(name)
+                if value is not None:
+                    obj.setChecked(value == "true" or value is True)
 
             if isinstance(obj, QComboBox):
                 name = obj.objectName()
@@ -233,6 +240,11 @@ class MainWindow(QMainWindow):
                 self.settings.setValue(name, value)
 
             if isinstance(obj, QRadioButton):
+                name = obj.objectName()
+                value = obj.isChecked()
+                self.settings.setValue(name, value)
+                
+            if isinstance(obj, QCheckBox):
                 name = obj.objectName()
                 value = obj.isChecked()
                 self.settings.setValue(name, value)
